@@ -16,8 +16,7 @@ export default function DifficultySelector({ difficulty, setDifficulty, onNewGam
   }
 
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-md">
-      <div className="w-full sm:w-2/3">
+<div className="flex flex-col sm:flex-row items-center gap-4 bg-white/90 p-4 rounded-lg shadow-md backdrop-blur-sm flex-grow">      <div className="w-full sm:w-2/3">
         <Select value={difficulty} onValueChange={handleDifficultyChange}>
           <SelectTrigger>
             <SelectValue placeholder="Selecciona dificultad" />

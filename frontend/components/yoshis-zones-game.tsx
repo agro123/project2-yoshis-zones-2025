@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import GameBoard from "./game-board"
 import GameInfo from "./game-info"
 import DifficultySelector from "./difficulty-selector"
+import AudioControl from "./audio-control"
 
 // Tipos para el juego
 export type CellState = "empty" | "green-yoshi" | "red-yoshi" | "green-painted" | "red-painted"
@@ -35,6 +36,9 @@ export default function YoshisZonesGame() {
 
   // Dificultad seleccionada
   const [difficulty, setDifficulty] = useState<Difficulty>("beginner")
+
+  // Estado del audio
+  const [isMuted, setIsMuted] = useState(false)
 
   // Zonas especiales (esquinas)
   const specialZones: Position[][] = [
@@ -89,6 +93,13 @@ export default function YoshisZonesGame() {
     return position
   }
 
+// Manejar el cambio de estado del audio
+const toggleMute = () => {
+  setIsMuted(!isMuted)
+  // Aquí podrías añadir lógica adicional para silenciar/activar el audio de fondo
+}
+
+
   // Inicializar el juego
   const initializeGame = () => {
     // Crear un nuevo tablero vacío
@@ -117,7 +128,33 @@ export default function YoshisZonesGame() {
     setGreenZones(0)
     setRedZones(0)
     setGameStatus("playing")
+    // Reproducir sonido de inicio de juego (cuando se implemente el audio)
+    playSound("gameStart")
   }
+
+// Función para reproducir sonidos (placeholder para futura implementación)
+const playSound = (soundType: string) => {
+  if (isMuted) return // No reproducir si está silenciado
+
+  // PUNTO DE INTEGRACIÓN CON AUDIO #1:
+  // Aquí se implementaría la lógica para reproducir diferentes sonidos
+  // según el tipo de sonido solicitado
+  /*
+  const sounds = {
+    gameStart: '/sounds/game-start.mp3',
+    move: '/sounds/move.mp3',
+    capture: '/sounds/capture.mp3',
+    win: '/sounds/win.mp3',
+    lose: '/sounds/lose.mp3'
+  };
+  
+  const audio = new Audio(sounds[soundType]);
+  audio.play().catch(e => console.error('Error al reproducir audio:', e));
+  */
+
+  console.log(`Sonido reproducido: ${soundType} (silenciado: ${isMuted})`)
+}
+
 
   // Calcular movimientos válidos para un Yoshi (movimiento de caballo)
   const getValidMoves = (position: Position): Position[] => {
@@ -168,13 +205,14 @@ export default function YoshisZonesGame() {
     setBoard(newBoard)
     setRedYoshiPosition({ row, col })
     setIsGreenTurn(true)
-
-    // Aquí se conectaría con la lógica de IA para el movimiento del Yoshi verde
-    // Por ahora, simplemente cambiamos el turno de vuelta al jugador después de un tiempo
-    setTimeout(() => {
-      // Simular un movimiento aleatorio del Yoshi verde
-      simulateGreenYoshiMove()
-    }, 500)
+    // Reproducir sonido de movimiento
+    playSound("move")
+   // Aquí se conectaría con la lógica de IA para el movimiento del Yoshi verde
+   // Por ahora, simplemente cambiamos el turno de vuelta al jugador después de un tiempo
+   setTimeout(() => {
+     // Simular un movimiento aleatorio del Yoshi verde
+     simulateGreenYoshiMove()
+   }, 500)
 
     // Verificar si se ha ganado alguna zona
     checkZones()
@@ -203,6 +241,8 @@ export default function YoshisZonesGame() {
     setBoard(newBoard)
     setGreenYoshiPosition(randomMove)
     setIsGreenTurn(false)
+    // Reproducir sonido de movimiento
+    playSound("move")
 
     // Verificar si se ha ganado alguna zona
     checkZones()
@@ -222,7 +262,10 @@ export default function YoshisZonesGame() {
 
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-4xl">
-      <DifficultySelector difficulty={difficulty} setDifficulty={setDifficulty} onNewGame={initializeGame} />
+  <div className="flex flex-col sm:flex-row items-center justify-between w-full max-w-2xl gap-4">
+    <DifficultySelector difficulty={difficulty} setDifficulty={setDifficulty} onNewGame={initializeGame} />
+    <AudioControl isMuted={isMuted} toggleMute={toggleMute} />
+  </div>
 
       <div className="flex flex-col md:flex-row gap-6 w-full items-center">
         <GameBoard
