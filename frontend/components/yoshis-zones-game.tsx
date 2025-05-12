@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect ,useRef } from "react"
 import GameBoard from "./game-board"
 import GameInfo from "./game-info"
 import DifficultySelector from "./difficulty-selector"
 import AudioControl from "./audio-control"
+
 
 // Tipos para el juego
 export type CellState = "empty" | "green-yoshi" | "red-yoshi" | "green-painted" | "red-painted"
@@ -38,7 +39,23 @@ export default function YoshisZonesGame() {
   const [difficulty, setDifficulty] = useState<Difficulty>("beginner")
 
   // Estado del audio
-  const [isMuted, setIsMuted] = useState(false)
+  const [isMuted, setIsMuted] = useState(true)
+
+  // Referencias para los audios
+  const backgroundMusicRef = useRef<HTMLAudioElement | null>(null)
+  
+  // Estado para notificaciones
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [notificationCounter, setNotificationCounter] = useState(0)
+
+  useEffect(() => {
+    if (!isMuted) {
+      backgroundMusicRef.current = new Audio("/sounds/play.mp3")
+      backgroundMusicRef.current.loop = true
+      backgroundMusicRef.current.volume = 0.5
+      backgroundMusicRef.current.play().catch(e => console.warn("No se pudo reproducir el audio automáticamente:", e))
+    }
+  }, [isMuted])
 
   // Zonas especiales (esquinas)
   const specialZones: Position[][] = [
@@ -95,7 +112,7 @@ export default function YoshisZonesGame() {
 
 // Manejar el cambio de estado del audio
 const toggleMute = () => {
-  setIsMuted(!isMuted)
+  setIsMuted(prev => !prev)
   // Aquí podrías añadir lógica adicional para silenciar/activar el audio de fondo
 }
 
@@ -133,26 +150,41 @@ const toggleMute = () => {
   }
 
 // Función para reproducir sonidos (placeholder para futura implementación)
+// Función para reproducir sonidos
 const playSound = (soundType: string) => {
   if (isMuted) return // No reproducir si está silenciado
 
-  // PUNTO DE INTEGRACIÓN CON AUDIO #1:
-  // Aquí se implementaría la lógica para reproducir diferentes sonidos
-  // según el tipo de sonido solicitado
-  /*
-  const sounds = {
-    gameStart: '/sounds/game-start.mp3',
-    move: '/sounds/move.mp3',
-    capture: '/sounds/capture.mp3',
-    win: '/sounds/win.mp3',
-    lose: '/sounds/lose.mp3'
-  };
-  
-  const audio = new Audio(sounds[soundType]);
-  audio.play().catch(e => console.error('Error al reproducir audio:', e));
-  */
+  let soundPath = ""
+  let soundMessage = ""
 
-  console.log(`Sonido reproducido: ${soundType} (silenciado: ${isMuted})`)
+  switch (soundType) {
+    case "gameStart":
+      soundPath = "/sounds/play.mp3" // Usamos el sonido de fondo como inicio
+      soundMessage = "¡Nuevo juego iniciado!"
+      break
+    case "move":
+      soundPath = "/sounds/move.mp3" // Usamos el sonido de fondo como movimiento
+      soundMessage = isGreenTurn ? "Yoshi verde ha movido" : "Has movido a Yoshi rojo"
+      break
+    case "capture":
+      // No tenemos un sonido específico para capturas, podríamos crear uno
+      soundMessage = isGreenTurn ? "¡Yoshi verde ha capturado una zona!" : "¡Has capturado una zona!"
+      break
+    case "win":
+      soundPath = "/sounds/winner.mp3"
+      soundMessage = "¡Has ganado la partida!"
+      break
+    case "lose":
+      soundPath = "/sounds/game_over.mp3"
+      soundMessage = "Has perdido la partida"
+      break
+    case "draw":
+      soundPath = "/sounds/emp.mp3"
+      soundMessage = "La partida ha terminado en empate"
+      break
+  }
+
+  // Resto de la función...
 }
 
 
@@ -256,33 +288,61 @@ const playSound = (soundType: string) => {
   }
 
   // Inicializar el juego al cargar el componente
-  useEffect(() => {
-    initializeGame()
-  }, [])
+ // Se ejecuta solo una vez al montar el componente (inicializa juego y audio)
+useEffect(() => {
+  initializeGame()
 
-  return (
-    <div className="flex flex-col items-center gap-6 w-full max-w-4xl">
-  <div className="flex flex-col sm:flex-row items-center justify-between w-full max-w-2xl gap-4">
-    <DifficultySelector difficulty={difficulty} setDifficulty={setDifficulty} onNewGame={initializeGame} />
-    <AudioControl isMuted={isMuted} toggleMute={toggleMute} />
-  </div>
+  if (!isMuted && backgroundMusicRef.current) {
+    backgroundMusicRef.current.play().catch(e =>
+      console.warn("No se pudo reproducir el audio automáticamente:", e)
+    )
+  }
 
-      <div className="flex flex-col md:flex-row gap-6 w-full items-center">
-        <GameBoard
-          board={board}
-          specialZones={specialZones}
-          validMoves={!isGreenTurn && redYoshiPosition ? getValidMoves(redYoshiPosition) : []}
-          onCellClick={handlePlayerMove}
-        />
+  return () => {
+    if (backgroundMusicRef.current) {
+      backgroundMusicRef.current.pause()
+      backgroundMusicRef.current = null
+    }
+  }
+}, []) // ✅ Solo al montar
 
-        <GameInfo
-          greenZones={greenZones}
-          redZones={redZones}
-          isGreenTurn={isGreenTurn}
-          gameStatus={gameStatus}
-          difficulty={difficulty}
-        />
-      </div>
+// Se ejecuta cada vez que cambia isMuted (para pausar o reproducir)
+useEffect(() => {
+  if (backgroundMusicRef.current) {
+    if (isMuted) {
+      backgroundMusicRef.current.pause()
+    } else {
+      backgroundMusicRef.current.play().catch(e =>
+        console.warn("No se pudo reanudar el audio:", e)
+      )
+    }
+  }
+}, [isMuted]) // ✅ Solo controla el audio
+
+return (
+  <div className="flex flex-col items-center gap-6 w-full max-w-4xl">
+    <div className="flex flex-col sm:flex-row items-center justify-between w-full max-w-2xl gap-4">
+      <DifficultySelector difficulty={difficulty} setDifficulty={setDifficulty} onNewGame={initializeGame} />
+      <AudioControl isMuted={isMuted} toggleMute={toggleMute} />
     </div>
-  )
+
+    <div className="flex flex-col md:flex-row gap-6 w-full items-center">
+      <GameBoard
+        board={board}
+        specialZones={specialZones}
+        validMoves={!isGreenTurn && redYoshiPosition ? getValidMoves(redYoshiPosition) : []}
+        onCellClick={handlePlayerMove}
+      />
+
+      <GameInfo
+        greenZones={greenZones}
+        redZones={redZones}
+        isGreenTurn={isGreenTurn}
+        gameStatus={gameStatus}
+        difficulty={difficulty}
+      />
+    </div>
+  </div>
+)
+
 }
