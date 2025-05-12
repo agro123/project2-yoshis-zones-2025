@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-
+from minmax import obtener_movimiento
 app = Flask(__name__)
 
 
@@ -16,10 +16,10 @@ def jugar():
     }
 
     dificultad = datos.get("dificultad", 1)
-    #mejor_mov = obtener_movimiento(estado, dificultad)
+    mejor_mov = obtener_movimiento(estado, dificultad)
     mejor_mov = (0,0)
 
-    return jsonify({"nueva_pos_verde": mejor_mov})
+    return jsonify(mejor_mov)
 
 @app.route('/')
 def index():
