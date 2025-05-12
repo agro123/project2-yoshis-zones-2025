@@ -1,35 +1,27 @@
-# React
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Node modules
-node_modules/
+# dependencies
+/node_modules
 
-# Build output
-/dist
+# next.js
+/.next/
+/out/
+
+# production
 /build
 
-# System files
-.DS_Store
-Thumbs.db
-
-# Logs
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
 
-# dotenv environment variables
-.env
-.env.*.local
+# env files
+.env*
 
-# Editor/IDE settings
-.vscode/
-.idea/
+# vercel
+.vercel
 
-# Optional: OS-specific
-*.swp
-*.swo
-
-# Testing coverage
-coverage/
-
-# Misc
-*.local
+# typescript
+*.tsbuildinfo
+next-env.d.ts
