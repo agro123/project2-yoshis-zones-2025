@@ -18,19 +18,17 @@ ZONAS = [set(special_zone1), set(special_zone2), set(special_zone3), set(special
 
 #Recuenta cuántas zonas ha ganado cada jugador.
 def contar_zonas(estado):
-    verde = rojo = 0
+    zonas_verde = zonas_rojo = 0
     for zona in ZONAS:
         c_verde = len(zona & estado["casillas_verde"])
         c_rojo = len(zona & estado["casillas_rojo"])
 
-        if c_verde + c_rojo == len(zona):  # Zona completamente ocupada
-            if c_verde > c_rojo:
-                verde += 1
-            elif c_rojo > c_verde:
-                rojo += 1
-            # Si están empatados, nadie gana la zona
+        if c_verde >= 3:
+            zonas_verde += 1
+        elif c_rojo >= 3:
+            zonas_rojo += 1
 
-    return verde, rojo
+    return zonas_verde, zonas_rojo
 
 #Todos los movimientos posibles en L
 MOVIMIENTOS_CABALLO = [
