@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect ,useRef } from "react"
+import { useState, useEffect ,useRef, useMemo, useCallback } from "react"
 import GameBoard from "./game-board"
 import GameInfo from "./game-info"
 import DifficultySelector from "./difficulty-selector"
@@ -41,6 +41,11 @@ export default function YoshisZonesGame() {
   // Estado del audio
   const [isMuted, setIsMuted] = useState(true)
 
+  //Casillas marcadas
+  const [redCells, setRedCells] = useState<any[]>([])
+  const [greenCells, setGreenCells] = useState<any[]>([])
+
+
   // Referencias para los audios
   const backgroundMusicRef = useRef<HTMLAudioElement | null>(null)
   
@@ -64,7 +69,7 @@ export default function YoshisZonesGame() {
       { row: 0, col: 0 },
       { row: 0, col: 1 },
       { row: 1, col: 0 },
-      { row: 1, col: 1 },
+      { row: 2, col: 0 },
       { row: 0, col: 2 },
     ],
     // Esquina superior derecha
@@ -72,7 +77,7 @@ export default function YoshisZonesGame() {
       { row: 0, col: 7 },
       { row: 0, col: 6 },
       { row: 1, col: 7 },
-      { row: 1, col: 6 },
+      { row: 2, col: 7 },
       { row: 0, col: 5 },
     ],
     // Esquina inferior izquierda
@@ -80,7 +85,7 @@ export default function YoshisZonesGame() {
       { row: 7, col: 0 },
       { row: 7, col: 1 },
       { row: 6, col: 0 },
-      { row: 6, col: 1 },
+      { row: 5, col: 0 },
       { row: 7, col: 2 },
     ],
     // Esquina inferior derecha
@@ -88,7 +93,7 @@ export default function YoshisZonesGame() {
       { row: 7, col: 7 },
       { row: 7, col: 6 },
       { row: 6, col: 7 },
-      { row: 6, col: 6 },
+      { row: 5, col: 7 },
       { row: 7, col: 5 },
     ],
   ]
@@ -110,11 +115,11 @@ export default function YoshisZonesGame() {
     return position
   }
 
-// Manejar el cambio de estado del audio
-const toggleMute = () => {
-  setIsMuted(prev => !prev)
-  // Aquí podrías añadir lógica adicional para silenciar/activar el audio de fondo
-}
+  // Manejar el cambio de estado del audio
+  const toggleMute = () => {
+    setIsMuted(prev => !prev)
+    // Aquí podrías añadir lógica adicional para silenciar/activar el audio de fondo
+  }
 
 
   // Inicializar el juego
@@ -144,48 +149,57 @@ const toggleMute = () => {
     setIsGreenTurn(true)
     setGreenZones(0)
     setRedZones(0)
+    setRedCells([])
+    setGreenCells([])
+
     setGameStatus("playing")
+
+    setTimeout(() => {
+      // Simular un movimiento aleatorio del Yoshi verde
+      //simulateGreenYoshiMove(greenPos, newBoard)
+      getGreenYoshiMovement(greenPos, redPos, [], [], 0, 0, newBoard)
+    }, 1000)
     // Reproducir sonido de inicio de juego (cuando se implemente el audio)
     playSound("gameStart")
   }
 
-// Función para reproducir sonidos (placeholder para futura implementación)
-// Función para reproducir sonidos
-const playSound = (soundType: string) => {
-  if (isMuted) return // No reproducir si está silenciado
+  // Función para reproducir sonidos (placeholder para futura implementación)
+  // Función para reproducir sonidos
+  const playSound = (soundType: string) => {
+    if (isMuted) return // No reproducir si está silenciado
 
-  let soundPath = ""
-  let soundMessage = ""
+    let soundPath = ""
+    let soundMessage = ""
 
-  switch (soundType) {
-    case "gameStart":
-      soundPath = "/sounds/play.mp3" // Usamos el sonido de fondo como inicio
-      soundMessage = "¡Nuevo juego iniciado!"
-      break
-    case "move":
-      soundPath = "/sounds/move.mp3" // Usamos el sonido de fondo como movimiento
-      soundMessage = isGreenTurn ? "Yoshi verde ha movido" : "Has movido a Yoshi rojo"
-      break
-    case "capture":
-      // No tenemos un sonido específico para capturas, podríamos crear uno
-      soundMessage = isGreenTurn ? "¡Yoshi verde ha capturado una zona!" : "¡Has capturado una zona!"
-      break
-    case "win":
-      soundPath = "/sounds/winner.mp3"
-      soundMessage = "¡Has ganado la partida!"
-      break
-    case "lose":
-      soundPath = "/sounds/game_over.mp3"
-      soundMessage = "Has perdido la partida"
-      break
-    case "draw":
-      soundPath = "/sounds/emp.mp3"
-      soundMessage = "La partida ha terminado en empate"
-      break
+    switch (soundType) {
+      case "gameStart":
+        soundPath = "/sounds/play.mp3" // Usamos el sonido de fondo como inicio
+        soundMessage = "¡Nuevo juego iniciado!"
+        break
+      case "move":
+        soundPath = "/sounds/move.mp3" // Usamos el sonido de fondo como movimiento
+        soundMessage = isGreenTurn ? "Yoshi verde ha movido" : "Has movido a Yoshi rojo"
+        break
+      case "capture":
+        // No tenemos un sonido específico para capturas, podríamos crear uno
+        soundMessage = isGreenTurn ? "¡Yoshi verde ha capturado una zona!" : "¡Has capturado una zona!"
+        break
+      case "win":
+        soundPath = "/sounds/winner.mp3"
+        soundMessage = "¡Has ganado la partida!"
+        break
+      case "lose":
+        soundPath = "/sounds/game_over.mp3"
+        soundMessage = "Has perdido la partida"
+        break
+      case "draw":
+        soundPath = "/sounds/emp.mp3"
+        soundMessage = "La partida ha terminado en empate"
+        break
+    }
+
+    // Resto de la función...
   }
-
-  // Resto de la función...
-}
 
 
   // Calcular movimientos válidos para un Yoshi (movimiento de caballo)
@@ -227,57 +241,152 @@ const playSound = (soundType: string) => {
     // Crear una copia del tablero
     const newBoard = [...board.map((row) => [...row])]
 
-    // Actualizar la posición anterior del Yoshi rojo
-    newBoard[redYoshiPosition.row][redYoshiPosition.col] = "red-painted"
-
     // Mover el Yoshi rojo a la nueva posición
     newBoard[row][col] = "red-yoshi"
 
+    let newRedCells = [...redCells]
+    if(isInSpecialZone({row,col})){
+      newRedCells = [...redCells, [row,col]]
+      setRedCells(newRedCells)
+    }
+
+    // Actualizar la posición anterior del Yoshi rojo
+    if(isInSpecialZone(redYoshiPosition)){
+      newBoard[redYoshiPosition.row][redYoshiPosition.col] = "red-painted"
+    } else {
+      newBoard[redYoshiPosition.row][redYoshiPosition.col] = "empty"
+    }
+
+    const newPos = { row, col }
     // Actualizar el estado
     setBoard(newBoard)
-    setRedYoshiPosition({ row, col })
+    setRedYoshiPosition(newPos)
     setIsGreenTurn(true)
     // Reproducir sonido de movimiento
     playSound("move")
-   // Aquí se conectaría con la lógica de IA para el movimiento del Yoshi verde
-   // Por ahora, simplemente cambiamos el turno de vuelta al jugador después de un tiempo
-   setTimeout(() => {
-     // Simular un movimiento aleatorio del Yoshi verde
-     simulateGreenYoshiMove()
-   }, 500)
+
+    // Aquí se conectaría con la lógica de IA para el movimiento del Yoshi verde
+    // Por ahora, simplemente cambiamos el turno de vuelta al jugador después de un tiempo
+    setTimeout(() => {
+      if(greenYoshiPosition) {
+        // Simular un movimiento aleatorio del Yoshi verde
+        //simulateGreenYoshiMove(greenYoshiPosition, newBoard)
+        //Obtener movimiento de Yoshi Verde
+        getGreenYoshiMovement(greenYoshiPosition, newPos, greenCells, newRedCells, 0, 0,newBoard)
+      }
+
+    }, 500)
 
     // Verificar si se ha ganado alguna zona
     checkZones()
   }
 
   // Añadir una función para simular el movimiento del Yoshi verde (máquina)
-  const simulateGreenYoshiMove = () => {
-    if (!greenYoshiPosition || gameStatus !== "playing") return
+  const simulateGreenYoshiMove = (currentPos: Position, currBoard: CellState[][]) => {
+      const _greenPos = currentPos
+      if (!_greenPos || gameStatus !== "playing") return
+      const validMoves = getValidMoves(_greenPos)
 
-    const validMoves = getValidMoves(greenYoshiPosition)
-    if (validMoves.length === 0) return
+      if (validMoves.length === 0) return
 
-    // Seleccionar un movimiento aleatorio
-    const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)]
+      // Seleccionar un movimiento aleatorio
+      const newMove = validMoves[Math.floor(Math.random() * validMoves.length)]
 
-    // Crear una copia del tablero
-    const newBoard = [...board.map((row) => [...row])]
+      // Crear una copia del tablero
+      const newBoard = [...currBoard.map((row) => [...row])]
 
-    // Actualizar la posición anterior del Yoshi verde
-    newBoard[greenYoshiPosition.row][greenYoshiPosition.col] = "green-painted"
+      if(isInSpecialZone(newMove)){
+        setGreenCells(curr => [...curr, [newMove.row,newMove.col]])
+      }
 
-    // Mover el Yoshi verde a la nueva posición
-    newBoard[randomMove.row][randomMove.col] = "green-yoshi"
+      // Actualizar la posición anterior del Yoshi verde
+      if(isInSpecialZone(_greenPos)){
+        newBoard[_greenPos.row][_greenPos.col] = "green-painted"
+      } else {
+        newBoard[_greenPos.row][_greenPos.col] = "empty"
+      }
 
-    // Actualizar el estado
-    setBoard(newBoard)
-    setGreenYoshiPosition(randomMove)
-    setIsGreenTurn(false)
-    // Reproducir sonido de movimiento
-    playSound("move")
+      // Mover el Yoshi verde a la nueva posición
+      newBoard[newMove.row][newMove.col] = "green-yoshi"
+      // Actualizar el estado
+      setBoard(newBoard)
+      setGreenYoshiPosition(newMove)
+      setIsGreenTurn(false)
+      // Reproducir sonido de movimiento
+      playSound("move")
 
-    // Verificar si se ha ganado alguna zona
-    checkZones()
+      // Verificar si se ha ganado alguna zona
+      checkZones()
+  }
+
+  // Añadir una función para simular el movimiento del Yoshi verde (máquina)
+  const getGreenYoshiMovement = async (currGreenYoshiPos: Position, currRedYoshiPos: Position, currGreenCells: any, currRedCells: any, currGreenZones: number, currRedZones: number,  currBoard: CellState[][]) => {
+    try {
+      const _greenPos = currGreenYoshiPos
+      if (!_greenPos || gameStatus !== "playing") return
+      const validMoves = getValidMoves(_greenPos)
+
+      if (validMoves.length === 0) return
+
+      console.log(JSON.stringify({
+        "pos_verde": [_greenPos.row, _greenPos.col],
+        "pos_rojo": [currRedYoshiPos.row, currRedYoshiPos.col],
+        "casillas_verde": currGreenCells,
+        "casillas_rojo": currRedCells,
+        "zonas_verde": currGreenZones,
+        "zonas_rojo": currRedZones
+      }))
+      const response = await fetch('http://127.0.0.1:5000/play', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          "pos_verde": [_greenPos.row, _greenPos.col],
+          "pos_rojo": [currRedYoshiPos.row, currRedYoshiPos.col],
+          "casillas_verde": currGreenCells,
+          "casillas_rojo": currRedCells,
+          "zonas_verde": currGreenZones,
+          "zonas_rojo": currRedZones
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error en la petición');
+      }
+  
+      const [row, col]: [number, number] = await response.json();
+      const newMove: Position = {row,col}
+      console.log('Respuesta del servidor:', newMove);
+
+      // Crear una copia del tablero
+      const newBoard = [...currBoard.map((r) => [...r])]
+      if(isInSpecialZone(newMove)){
+        setGreenCells([...currGreenCells, [row,col]])
+      }
+
+      // Actualizar la posición anterior del Yoshi verde
+      if(isInSpecialZone(_greenPos)){
+        newBoard[_greenPos.row][_greenPos.col] = "green-painted"
+      } else {
+        newBoard[_greenPos.row][_greenPos.col] = "empty"
+      }
+
+      // Mover el Yoshi verde a la nueva posición
+      newBoard[newMove.row][newMove.col] = "green-yoshi"
+      // Actualizar el estado
+      setBoard(newBoard)
+      setGreenYoshiPosition(newMove)
+      setIsGreenTurn(false)
+      // Reproducir sonido de movimiento
+      playSound("move")
+
+      // Verificar si se ha ganado alguna zona
+      checkZones()
+      
+    } catch (error) {
+      console.error('Error al hacer el POST:', error);
+    }
   }
 
   // Verificar si alguna zona especial ha sido capturada
@@ -288,61 +397,64 @@ const playSound = (soundType: string) => {
   }
 
   // Inicializar el juego al cargar el componente
- // Se ejecuta solo una vez al montar el componente (inicializa juego y audio)
-useEffect(() => {
-  initializeGame()
+  // Se ejecuta solo una vez al montar el componente (inicializa juego y audio)
+  useEffect(() => {
+    initializeGame()
 
-  if (!isMuted && backgroundMusicRef.current) {
-    backgroundMusicRef.current.play().catch(e =>
-      console.warn("No se pudo reproducir el audio automáticamente:", e)
-    )
-  }
-
-  return () => {
-    if (backgroundMusicRef.current) {
-      backgroundMusicRef.current.pause()
-      backgroundMusicRef.current = null
-    }
-  }
-}, []) // ✅ Solo al montar
-
-// Se ejecuta cada vez que cambia isMuted (para pausar o reproducir)
-useEffect(() => {
-  if (backgroundMusicRef.current) {
-    if (isMuted) {
-      backgroundMusicRef.current.pause()
-    } else {
+    if (!isMuted && backgroundMusicRef.current) {
       backgroundMusicRef.current.play().catch(e =>
-        console.warn("No se pudo reanudar el audio:", e)
+        console.warn("No se pudo reproducir el audio automáticamente:", e)
       )
     }
-  }
-}, [isMuted]) // ✅ Solo controla el audio
 
-return (
-  <div className="flex flex-col items-center gap-6 w-full max-w-4xl">
-    <div className="flex flex-col sm:flex-row items-center justify-between w-full max-w-2xl gap-4">
-      <DifficultySelector difficulty={difficulty} setDifficulty={setDifficulty} onNewGame={initializeGame} />
-      <AudioControl isMuted={isMuted} toggleMute={toggleMute} />
+    return () => {
+      if (backgroundMusicRef.current) {
+        backgroundMusicRef.current.pause()
+        backgroundMusicRef.current = null
+      }
+    }
+  }, []) // ✅ Solo al montar
+
+  // Se ejecuta cada vez que cambia isMuted (para pausar o reproducir)
+  useEffect(() => {
+    if (backgroundMusicRef.current) {
+      if (isMuted) {
+        backgroundMusicRef.current.pause()
+      } else {
+        backgroundMusicRef.current.play().catch(e =>
+          console.warn("No se pudo reanudar el audio:", e)
+        )
+      }
+    }
+  }, [isMuted]) // ✅ Solo controla el audio
+
+  useEffect(() => {
+  }, [gameStatus])
+  
+  const redMovements = useMemo(() => !isGreenTurn && redYoshiPosition ? getValidMoves(redYoshiPosition) : [] , [redYoshiPosition, isGreenTurn])
+
+  return (
+    <div className="flex flex-col items-center gap-6 w-full max-w-4xl">
+      <div className="flex flex-col sm:flex-row items-center justify-between w-full max-w-2xl gap-4">
+        <DifficultySelector difficulty={difficulty} setDifficulty={setDifficulty} onNewGame={initializeGame} />
+        <AudioControl isMuted={isMuted} toggleMute={toggleMute} />
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-6 w-full items-center">
+        <GameBoard
+          board={board}
+          specialZones={specialZones}
+          validMoves={redMovements}
+          onCellClick={handlePlayerMove}
+        />
+        <GameInfo
+          greenZones={greenZones}
+          redZones={redZones}
+          isGreenTurn={isGreenTurn}
+          gameStatus={gameStatus}
+          difficulty={difficulty}
+        />
+      </div>
     </div>
-
-    <div className="flex flex-col md:flex-row gap-6 w-full items-center">
-      <GameBoard
-        board={board}
-        specialZones={specialZones}
-        validMoves={!isGreenTurn && redYoshiPosition ? getValidMoves(redYoshiPosition) : []}
-        onCellClick={handlePlayerMove}
-      />
-
-      <GameInfo
-        greenZones={greenZones}
-        redZones={redZones}
-        isGreenTurn={isGreenTurn}
-        gameStatus={gameStatus}
-        difficulty={difficulty}
-      />
-    </div>
-  </div>
-)
-
+  )
 }
