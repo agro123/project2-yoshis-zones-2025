@@ -1,35 +1,44 @@
-special_zone1 = [(0,0), (0,1), (0,2), (1,0), (2,0)]
-special_zone2 = [(0,5), (0,6), (0,7), (1,7), (2,7)]
-special_zone3 = [(5,0), (6,0), (7,0), (1,7), (2,7)]
-special_zone4 = [(5,7), (6,7), (7,7), (7,5), (7,6)]
-ZONAS = [set(special_zone1), set(special_zone2), set(special_zone3), set(special_zone4)]
+from helpers import ZONAS, MOVIMIENTOS_CABALLO
+from collections import deque
+from nodo import Nodo
 
-def distancia_a_zona_libre(pos, estado):
-    min_dist = float('inf')
-    ocupadas = estado["casillas_verde"] | estado["casillas_rojo"]
+def distancia_de_caballo_a_zona_libre(pos, nodo: Nodo):
+    ocupadas = nodo.casillas_verde | nodo.casillas_rojo
+    visitadas = set()
+    cola = deque()
+    cola.append((pos, 0))
 
-    for zona in ZONAS:
-        for celda in zona:
-            if celda not in ocupadas:
-                dx = abs(pos[0] - celda[0])
-                dy = abs(pos[1] - celda[1])
-                dist = dx + dy
-                min_dist = min(min_dist, dist)
-    return min_dist if min_dist != float('inf') else 0
+    while cola:
+        actual, pasos = cola.popleft()
+        if actual in visitadas:
+            continue
+        visitadas.add(actual)
 
-def heuristica(estado):
-    score = (estado["zonas_verde"] - estado["zonas_rojo"]) * 10
-    score += len(estado["casillas_verde"]) - len(estado["casillas_rojo"])
+        for zona in ZONAS:
+            for celda in zona:
+                if celda == actual and celda not in ocupadas:
+                    return pasos  # ya llegaste
 
-    # Cercanía a meta (casilla libre en zona especial)
-    dist_verde = distancia_a_zona_libre(estado["pos_verde"], estado)
-    dist_rojo = distancia_a_zona_libre(estado["pos_rojo"], estado)
+        for dx, dy in MOVIMIENTOS_CABALLO:
+            x, y = actual[0] + dx, actual[1] + dy
+            if 0 <= x < 8 and 0 <= y < 8:
+                cola.append(((x, y), pasos + 1))
 
-    # Mientras menor sea la distancia para el verde, mejor (score positivo)
-    # Mientras menor sea la distancia para el rojo, peor (score negativo)
-    score += (dist_rojo - dist_verde) * 0.5
+    return float('inf')
+
+def heuristica(nodo: Nodo):
+    score = (nodo.zonas_verde - nodo.zonas_rojo) * 10
+    score += len(nodo.casillas_verde) - len(nodo.casillas_rojo)
+
+    dist_verde = distancia_de_caballo_a_zona_libre(nodo.pos_verde, nodo)
+    dist_rojo = distancia_de_caballo_a_zona_libre(nodo.pos_rojo, nodo)
+
+    # Penalizar si está lejos de zona libre
+    if dist_verde != float('inf') and dist_rojo != float('inf'):
+        score += (dist_rojo - dist_verde) * 0.5
 
     return score
+
 
 """Zonas ganadas: Se calcula la diferencia entre la cantidad de zonas especiales ganadas por el Yoshi verde y el Yoshi rojo, multiplicada por un peso alto (10). Esto refleja el objetivo principal del juego.
 
