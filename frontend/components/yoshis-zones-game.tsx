@@ -265,6 +265,9 @@ export default function YoshisZonesGame() {
     // Reproducir sonido de movimiento
     playSound("move")
 
+    // Verificar si se ha ganado alguna zona
+    const [gz, rz] = checkZones(newRedCells, greenCells)
+
     // Aquí se conectaría con la lógica de IA para el movimiento del Yoshi verde
     // Por ahora, simplemente cambiamos el turno de vuelta al jugador después de un tiempo
     setTimeout(() => {
@@ -272,51 +275,10 @@ export default function YoshisZonesGame() {
         // Simular un movimiento aleatorio del Yoshi verde
         //simulateGreenYoshiMove(greenYoshiPosition, newBoard)
         //Obtener movimiento de Yoshi Verde
-        getGreenYoshiMovement(greenYoshiPosition, newPos, greenCells, newRedCells, 0, 0,newBoard)
+        getGreenYoshiMovement(greenYoshiPosition, newPos, greenCells, newRedCells, gz, rz,newBoard)
       }
 
     }, 500)
-
-    // Verificar si se ha ganado alguna zona
-    checkZones()
-  }
-
-  // Añadir una función para simular el movimiento del Yoshi verde (máquina)
-  const simulateGreenYoshiMove = (currentPos: Position, currBoard: CellState[][]) => {
-      const _greenPos = currentPos
-      if (!_greenPos || gameStatus !== "playing") return
-      const validMoves = getValidMoves(_greenPos)
-
-      if (validMoves.length === 0) return
-
-      // Seleccionar un movimiento aleatorio
-      const newMove = validMoves[Math.floor(Math.random() * validMoves.length)]
-
-      // Crear una copia del tablero
-      const newBoard = [...currBoard.map((row) => [...row])]
-
-      if(isInSpecialZone(newMove)){
-        setGreenCells(curr => [...curr, [newMove.row,newMove.col]])
-      }
-
-      // Actualizar la posición anterior del Yoshi verde
-      if(isInSpecialZone(_greenPos)){
-        newBoard[_greenPos.row][_greenPos.col] = "green-painted"
-      } else {
-        newBoard[_greenPos.row][_greenPos.col] = "empty"
-      }
-
-      // Mover el Yoshi verde a la nueva posición
-      newBoard[newMove.row][newMove.col] = "green-yoshi"
-      // Actualizar el estado
-      setBoard(newBoard)
-      setGreenYoshiPosition(newMove)
-      setIsGreenTurn(false)
-      // Reproducir sonido de movimiento
-      playSound("move")
-
-      // Verificar si se ha ganado alguna zona
-      checkZones()
   }
 
   // Añadir una función para simular el movimiento del Yoshi verde (máquina)
@@ -328,14 +290,6 @@ export default function YoshisZonesGame() {
 
       if (validMoves.length === 0) return
 
-      console.log(JSON.stringify({
-        "pos_verde": [_greenPos.row, _greenPos.col],
-        "pos_rojo": [currRedYoshiPos.row, currRedYoshiPos.col],
-        "casillas_verde": currGreenCells,
-        "casillas_rojo": currRedCells,
-        "zonas_verde": currGreenZones,
-        "zonas_rojo": currRedZones
-      }))
       const response = await fetch('http://127.0.0.1:5000/play', {
         method: 'POST',
         headers: {
@@ -347,7 +301,8 @@ export default function YoshisZonesGame() {
           "casillas_verde": currGreenCells,
           "casillas_rojo": currRedCells,
           "zonas_verde": currGreenZones,
-          "zonas_rojo": currRedZones
+          "zonas_rojo": currRedZones,
+          "dificultad": difficulty
         })
       });
 
@@ -361,8 +316,10 @@ export default function YoshisZonesGame() {
 
       // Crear una copia del tablero
       const newBoard = [...currBoard.map((r) => [...r])]
+      let newGreenCells = [...currGreenCells]
       if(isInSpecialZone(newMove)){
-        setGreenCells([...currGreenCells, [row,col]])
+        newGreenCells = [...currGreenCells, [row,col]]
+        setGreenCells(newGreenCells)
       }
 
       // Actualizar la posición anterior del Yoshi verde
@@ -382,18 +339,45 @@ export default function YoshisZonesGame() {
       playSound("move")
 
       // Verificar si se ha ganado alguna zona
-      checkZones()
-      
+      checkZones(currRedCells, newGreenCells)
     } catch (error) {
       console.error('Error al hacer el POST:', error);
     }
   }
 
   // Verificar si alguna zona especial ha sido capturada
-  const checkZones = () => {
+  const checkZones = (currenRedCells: any[], currentGreenCells: any[]) => {
     // Esta función verificaría si alguna zona especial ha sido completamente
     // pintada de un color y actualizaría los contadores
-    // Por ahora es un placeholder para la futura implementación
+    let _greenZones = 0;
+    let _redZones = 0;
+    for (const specialZone of specialZones) {
+      let _greenCells = 0
+      let _redCells = 0
+      for (const cell of specialZone) {
+        _redCells += currenRedCells.filter(c => cell.row === c[0] && cell.col === c[1]).length
+        _greenCells += currentGreenCells.filter(c => cell.row === c[0] && cell.col === c[1]).length
+      }
+      if(_greenCells >= 3)
+        _greenZones++
+      if(_redCells >= 3)
+        _redZones++
+    }
+    setGreenZones(_greenZones)
+    setRedZones(_redZones)
+    if(_greenZones > 2){
+      //gana verde
+    }
+      
+    if(_redZones > 2){
+      //gana rojo
+    }
+      
+    if(_redZones === 2 && _greenZones === 2){
+      //Empate
+    }
+
+    return [_greenZones, _redZones]
   }
 
   // Inicializar el juego al cargar el componente
