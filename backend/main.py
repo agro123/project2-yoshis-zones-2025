@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
+from minmax import mejor_movimientov1, mejor_movimientov2
 
 app = Flask(__name__)
-
+CORS(app)
 
 @app.route('/play', methods=['POST'])
 def jugar():
@@ -14,12 +16,11 @@ def jugar():
         "zonas_verde": datos["zonas_verde"],
         "zonas_rojo": datos["zonas_rojo"]
     }
+    dificultad = datos["dificultad"]
+    print('dificultad', dificultad)
+    mejor_mov = mejor_movimientov2(estado, dificultad)
 
-    dificultad = datos.get("dificultad", 1)
-    #mejor_mov = obtener_movimiento(estado, dificultad)
-    mejor_mov = (0,0)
-
-    return jsonify({"nueva_pos_verde": mejor_mov})
+    return jsonify((mejor_mov))
 
 @app.route('/')
 def index():
