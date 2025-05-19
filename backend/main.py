@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from minmax import mejor_movimientov1, mejor_movimientov2
+from minmax import obtener_mejor_movimiento
 
 app = Flask(__name__)
 CORS(app)
@@ -18,7 +18,7 @@ def jugar():
     }
     dificultad = datos["dificultad"]
     print('dificultad', dificultad)
-    mejor_mov = mejor_movimientov2(estado, dificultad)
+    mejor_mov = obtener_mejor_movimiento(estado, dificultad)
 
     return jsonify((mejor_mov))
 

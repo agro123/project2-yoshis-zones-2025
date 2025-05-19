@@ -6,7 +6,6 @@ class Nodo:
         self.padre = padre
         self.tipo = tipo  # 'max'(verde) o 'min'(rojo)
         self.profundidad = padre.profundidad + 1 if padre is not None else 0
-        self.hijos = []
 
         self.pos_verde = pos_verde
         self.pos_rojo = pos_rojo
@@ -17,7 +16,8 @@ class Nodo:
 
         self.beta = float("inf")
         self.alfa = float("-inf")
-        self.utilidad = 0
+        self.utilidad =  float("-inf") if tipo == "max" else float("inf") 
+        self.mejor_mov = None
 
     def simular_movimiento(self, jugador, nueva_pos):
         """
@@ -55,3 +55,9 @@ class Nodo:
     
     def set_beta(self, valor):
         self.beta = valor
+
+    def set_utilidad(self, valor):
+        self.utilidad = valor
+
+    def set_mejor_mov(self, valor):
+        self.mejor_mov = valor
