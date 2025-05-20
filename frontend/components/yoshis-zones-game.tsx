@@ -5,6 +5,7 @@ import GameBoard from "./game-board"
 import GameInfo from "./game-info"
 import DifficultySelector from "./difficulty-selector"
 import AudioControl from "./audio-control"
+import GameOverScreen from "./GameOverScreen";
 
 
 // Tipos para el juego
@@ -40,7 +41,8 @@ export default function YoshisZonesGame() {
 
   // Estado del audio
   const [isMuted, setIsMuted] = useState(true)
-
+  
+  const [audiogame, setAudioGame] = useState("gameStart")
   //Casillas marcadas
   const [redCells, setRedCells] = useState<any[]>([])
   const [greenCells, setGreenCells] = useState<any[]>([])
@@ -53,14 +55,38 @@ export default function YoshisZonesGame() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [notificationCounter, setNotificationCounter] = useState(0)
 
+  const [winner, setWinner] = useState<"green" | "red" | "draw" | null>(null);
+
+
+  
   useEffect(() => {
-    if (!isMuted) {
-      backgroundMusicRef.current = new Audio("/sounds/play.mp3")
-      backgroundMusicRef.current.loop = true
-      backgroundMusicRef.current.volume = 0.5
-      backgroundMusicRef.current.play().catch(e => console.warn("No se pudo reproducir el audio automáticamente:", e))
-    }
-  }, [isMuted])
+  if (!backgroundMusicRef.current) {
+    backgroundMusicRef.current = new Audio("/sounds/play.mp3");
+    backgroundMusicRef.current.loop = true;
+    backgroundMusicRef.current.volume = 0.5;
+  }
+
+  if (!isMuted) {
+    backgroundMusicRef.current.play().catch(e =>
+      console.warn("No se pudo reproducir el audio automáticamente:", e)
+    );
+  } else {
+    backgroundMusicRef.current.pause();
+  }
+}, [isMuted]);
+
+
+  useEffect(() => {
+  if (gameStatus !== "playing" && backgroundMusicRef.current) {
+    backgroundMusicRef.current.pause();
+    backgroundMusicRef.current.currentTime = 0;
+  }
+  
+}, [gameStatus]);
+
+
+
+
 
   // Zonas especiales (esquinas)
   const specialZones: Position[][] = [
@@ -124,10 +150,12 @@ export default function YoshisZonesGame() {
 
   // Inicializar el juego
   const initializeGame = () => {
-    // Crear un nuevo tablero vacío
-    const newBoard: CellState[][] = Array(8)
-      .fill(null)
-      .map(() => Array(8).fill("empty"))
+  setWinner(null); // oculta la pantalla de game over cuando reinicias
+
+  // Crear un nuevo tablero vacío
+  const newBoard: CellState[][] = Array(8)
+    .fill(null)
+    .map(() => Array(8).fill("empty"))
 
     // Generar posiciones aleatorias para los Yoshis
     const greenPos = generateRandomPosition()
@@ -165,41 +193,51 @@ export default function YoshisZonesGame() {
 
   // Función para reproducir sonidos (placeholder para futura implementación)
   // Función para reproducir sonidos
-  const playSound = (soundType: string) => {
-    if (isMuted) return // No reproducir si está silenciado
+ const playSound = (soundType: string) => {
+  if (isMuted) return; // No reproducir si está silenciado
 
-    let soundPath = ""
-    let soundMessage = ""
+  let soundPath = "";
+  let soundMessage = "";
 
-    switch (soundType) {
-      case "gameStart":
-        soundPath = "/sounds/play.mp3" // Usamos el sonido de fondo como inicio
-        soundMessage = "¡Nuevo juego iniciado!"
-        break
-      case "move":
-        soundPath = "/sounds/move.mp3" // Usamos el sonido de fondo como movimiento
-        soundMessage = isGreenTurn ? "Yoshi verde ha movido" : "Has movido a Yoshi rojo"
-        break
-      case "capture":
-        // No tenemos un sonido específico para capturas, podríamos crear uno
-        soundMessage = isGreenTurn ? "¡Yoshi verde ha capturado una zona!" : "¡Has capturado una zona!"
-        break
-      case "win":
-        soundPath = "/sounds/winner.mp3"
-        soundMessage = "¡Has ganado la partida!"
-        break
-      case "lose":
-        soundPath = "/sounds/game_over.mp3"
-        soundMessage = "Has perdido la partida"
-        break
-      case "draw":
-        soundPath = "/sounds/emp.mp3"
-        soundMessage = "La partida ha terminado en empate"
-        break
-    }
-
-    // Resto de la función...
+  switch (soundType) {
+    case "gameStart":
+      soundPath = "/sounds/play.mp3";
+      soundMessage = "¡Nuevo juego iniciado!";
+      break;
+    case "move":
+      soundPath = "/sounds/move.mp3";
+      soundMessage = isGreenTurn ? "Yoshi verde ha movido" : "Has movido a Yoshi rojo";
+      break;
+    case "capture":
+      soundMessage = isGreenTurn ? "¡Yoshi verde ha capturado una zona!" : "¡Has capturado una zona!";
+      break;
+    case "win":
+      soundPath = "/sounds/winner.mp3";
+      soundMessage = "¡Has ganado la partida!";
+      break;
+    case "lose":
+      soundPath = "/sounds/game_over.mp3";
+      soundMessage = "Has perdido la partida";
+      break;
+    case "draw":
+      soundPath = "/sounds/emp.mp3";
+      soundMessage = "La partida ha terminado en empate";
+      break;
   }
+
+if (soundPath) {
+  const audio = new Audio(soundPath)
+  audio.volume = 0.5
+  audio.play().catch(e =>
+    console.warn("No se pudo reproducir el audio automáticamente:", e)
+  )
+}
+
+
+  // Aquí podrías mostrar el mensaje con un toast o algo similar
+  // console.log(soundMessage)
+};
+
 
 
   // Calcular movimientos válidos para un Yoshi (movimiento de caballo)
@@ -279,6 +317,21 @@ export default function YoshisZonesGame() {
       }
 
     }, 500)
+
+
+       if (isGameOver()) {
+   getWinnerMessage(); // actualiza el estado `winner` para mostrar pantalla visual
+   setGameStatus(
+    greenZones > redZones
+      ? "green-wins"
+      : redZones > greenZones
+      ? "red-wins"
+      : "draw"
+  );
+  return;
+}
+
+
   }
 
   // Añadir una función para simular el movimiento del Yoshi verde (máquina)
@@ -379,6 +432,38 @@ export default function YoshisZonesGame() {
 
     return [_greenZones, _redZones]
   }
+  
+function isGameOver(): boolean {
+  return specialZones.flat().every(pos => {
+    const cell = board[pos.row][pos.col];
+    return cell === "green-painted" || cell === "red-painted";
+  });
+}
+
+function getWinnerMessage(): void {
+  if (greenZones > redZones) {
+    setAudioGame("win");
+    setWinner("green"); // nuevo: guardamos el ganador en estado
+  } else if (redZones > greenZones) {
+    setAudioGame("lose");
+    setWinner("red");
+  } else {
+    setAudioGame("draw");
+    setWinner("draw");
+  }
+}
+
+
+useEffect(() => {
+  if (gameStatus === "green-wins") {
+    playSound("lose")
+  } else if (gameStatus === "red-wins") {
+    playSound("win")
+  } else if (gameStatus === "draw") {
+    playSound("draw")
+  }
+}, [gameStatus])
+
 
   // Inicializar el juego al cargar el componente
   // Se ejecuta solo una vez al montar el componente (inicializa juego y audio)
@@ -439,6 +524,8 @@ export default function YoshisZonesGame() {
           difficulty={difficulty}
         />
       </div>
+      {winner && <GameOverScreen winner={winner} onRestart={initializeGame} />}
+
     </div>
   )
 }
