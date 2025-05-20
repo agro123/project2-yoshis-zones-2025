@@ -1,6 +1,6 @@
 from collections import deque
 from nodo import Nodo
-from helpers import movimientos_validos, ZONAS
+from helpers import movimientos_validos, contar_zonas
 from heuristica import heuristica
 import time
 

@@ -1,4 +1,4 @@
-from helpers import ZONAS, MOVIMIENTOS_CABALLO, contar_zonas
+from helpers import ZONAS, MOVIMIENTOS_CABALLO
 from collections import deque
 from nodo import Nodo
 
