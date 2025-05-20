@@ -57,6 +57,9 @@ export default function YoshisZonesGame() {
 
   const [winner, setWinner] = useState<"green" | "red" | "draw" | null>(null);
 
+  const [capturedZones, setCapturedZones] = useState<{ index: number; owner: "green" | "red" }[]>([]);
+
+
 
   
   useEffect(() => {
@@ -128,6 +131,17 @@ export default function YoshisZonesGame() {
   const isInSpecialZone = (position: Position): boolean => {
     return specialZones.some((zone) => zone.some((pos) => pos.row === position.row && pos.col === position.col))
   }
+
+// Verificar si una celda pertenece a una zona ya capturada
+const isCellBlocked = (row: number, col: number): boolean => {
+  return capturedZones.some(({ index }) =>
+    specialZones[index].some(cell => cell.row === row && cell.col === col)
+  );
+};
+
+
+
+
 
   // Generar posición aleatoria fuera de zonas especiales
   const generateRandomPosition = (): Position => {
@@ -264,11 +278,20 @@ if (soundPath) {
       const cell = board[move.row][move.col]
       return cell !== "green-yoshi" && cell !== "red-yoshi"
     })
+
   }
+
+  // Filtrar movimientos que no estén en zonas capturadas
+const getUnblockedMoves = (moves: Position[]) => {
+  return moves.filter(pos => !isCellBlocked(pos.row, pos.col));
+};
+
 
   // Actualizar la función handlePlayerMove para que maneje el movimiento del jugador (Yoshi rojo)
   const handlePlayerMove = (row: number, col: number) => {
     if (isGreenTurn || gameStatus !== "playing" || !redYoshiPosition) return
+    if (isCellBlocked(row, col)) return; // 🚫 No pintar en zona capturada
+
 
     // Verificar si el movimiento es válido
     const validMoves = getValidMoves(redYoshiPosition)
@@ -339,7 +362,8 @@ if (soundPath) {
     try {
       const _greenPos = currGreenYoshiPos
       if (!_greenPos || gameStatus !== "playing") return
-      const validMoves = getValidMoves(_greenPos)
+      const validMoves = getUnblockedMoves(getValidMoves(_greenPos));
+     if (validMoves.length === 0) return; // no hay movimientos válidos
 
       if (validMoves.length === 0) return
 
@@ -364,6 +388,7 @@ if (soundPath) {
       }
   
       const [row, col]: [number, number] = await response.json();
+      if (isCellBlocked(row, col)) return; // 🚫 No pintar en zona capturada
       const newMove: Position = {row,col}
       console.log('Respuesta del servidor:', newMove);
 
@@ -399,39 +424,42 @@ if (soundPath) {
   }
 
   // Verificar si alguna zona especial ha sido capturada
-  const checkZones = (currenRedCells: any[], currentGreenCells: any[]) => {
-    // Esta función verificaría si alguna zona especial ha sido completamente
-    // pintada de un color y actualizaría los contadores
-    let _greenZones = 0;
-    let _redZones = 0;
-    for (const specialZone of specialZones) {
-      let _greenCells = 0
-      let _redCells = 0
-      for (const cell of specialZone) {
-        _redCells += currenRedCells.filter(c => cell.row === c[0] && cell.col === c[1]).length
-        _greenCells += currentGreenCells.filter(c => cell.row === c[0] && cell.col === c[1]).length
-      }
-      if(_greenCells >= 3)
-        _greenZones++
-      if(_redCells >= 3)
-        _redZones++
-    }
-    setGreenZones(_greenZones)
-    setRedZones(_redZones)
-    if(_greenZones > 2){
-      //gana verde
-    }
-      
-    if(_redZones > 2){
-      //gana rojo
-    }
-      
-    if(_redZones === 2 && _greenZones === 2){
-      //Empate
+  const checkZones = (currentRedCells: any[], currentGreenCells: any[]) => {
+  const redSet = new Set(currentRedCells.map(([r, c]) => `${r},${c}`));
+  const greenSet = new Set(currentGreenCells.map(([r, c]) => `${r},${c}`));
+
+  let _greenZones = 0;
+  let _redZones = 0;
+  const newCaptured = [...capturedZones];
+
+  specialZones.forEach((zone, index) => {
+    if (newCaptured.some(z => z.index === index)) return; // ya fue capturada
+
+    let greenCount = 0;
+    let redCount = 0;
+
+    for (const cell of zone) {
+      const key = `${cell.row},${cell.col}`;
+      if (greenSet.has(key)) greenCount++;
+      if (redSet.has(key)) redCount++;
     }
 
-    return [_greenZones, _redZones]
-  }
+    if (greenCount >= 3) {
+      _greenZones++;
+      newCaptured.push({ index, owner: "green" });
+    } else if (redCount >= 3) {
+      _redZones++;
+      newCaptured.push({ index, owner: "red" });
+    }
+  });
+
+  setCapturedZones(newCaptured);
+  setGreenZones(_greenZones);
+  setRedZones(_redZones);
+
+  return [_greenZones, _redZones];
+};
+
   
 function isGameOver(): boolean {
   return specialZones.flat().every(pos => {
