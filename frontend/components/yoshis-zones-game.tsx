@@ -293,6 +293,14 @@ export default function YoshisZonesGame() {
     if (isGreenTurn || gameStatus !== "playing" || !redYoshiPosition) return;
     if (isCellBlocked(row, col)) return; // 🚫 No pintar en zona capturada
 
+    // 🚫 Verificar si la celda ya está pintada (por verde o por rojo)
+    const yaPintada = greenCells.some(([r, c]) => r === row && c === col) ||
+                      redCells.some(([r, c]) => r === row && c === col);
+
+    if (yaPintada) {
+      console.warn("❌ No puedes volver a una casilla ya pintada:", row, col);
+      return;
+    }
     // Verificar si el movimiento es válido
     const validMoves = getValidMoves(redYoshiPosition);
     const isValidMove = validMoves.some(

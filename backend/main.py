@@ -20,6 +20,11 @@ def jugar():
     print('dificultad', dificultad)
     mejor_mov = obtener_mejor_movimiento(estado, dificultad)
 
+    ya_pintadas = estado["casillas_verde"] | estado["casillas_rojo"]
+    if mejor_mov in ya_pintadas:
+        print("⚠️ ERROR: El movimiento sugerido ya está pintado:", mejor_mov)
+        return jsonify({"error": "Movimiento inválido: ya pintado"}), 400
+
     return jsonify((mejor_mov))
 
 @app.route('/')

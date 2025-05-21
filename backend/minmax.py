@@ -1,6 +1,6 @@
 from collections import deque
 from nodo import Nodo
-from helpers import movimientos_validos, ZONAS
+from helpers import movimientos_validos, ZONAS, movimiento_es_valido
 from heuristica import heuristica
 import time
 
@@ -18,11 +18,16 @@ def minimax_poda(nodo: Nodo, profundidad_limite):
     posicion_actual = nodo.pos_verde if jugador == 'verde' else nodo.pos_rojo
     posicion_contricante = nodo.pos_verde if jugador == 'rojo' else nodo.pos_rojo
     ocupadas = nodo.casillas_verde | nodo.casillas_rojo | {posicion_contricante}
-    movimientos = movimientos_validos(posicion_actual, ocupadas)
+    movimientos = movimientos_validos(posicion_actual, ocupadas, nodo.casillas_verde, nodo.casillas_rojo)
     print('movimientos.', movimientos)
     if nodo.tipo == 'max':
         valor = float('-inf')
         for mov in movimientos:
+            if not movimiento_es_valido(mov, {
+                "casillas_verde": nodo.casillas_verde,
+                "casillas_rojo": nodo.casillas_rojo
+            }):
+                continue  # ignorar movimientos inválidos
             estado = nodo.simular_movimiento(jugador, mov)
             hijo = Nodo(
                 pos_verde=estado["pos_verde"],
@@ -104,7 +109,7 @@ def bfs_minmax(raiz: Nodo, profundidad):
         casillas_ocupadas = node.casillas_verde | node.casillas_rojo | {posicion_contricante}
 
         # Obtener movimientos válidos desde la posición actual
-        movimientos = movimientos_validos(posicion_actual, casillas_ocupadas)
+        movimientos = movimientos_validos(posicion_actual, casillas_ocupadas, node.casillas_verde, node.casillas_rojo)
         print('movimientos.', movimientos)
         for movimiento in reversed(movimientos):
             nuevo_estado = node.simular_movimiento(jugador, movimiento)
