@@ -192,6 +192,7 @@ export default function YoshisZonesGame() {
     setRedZones(0);
     setRedCells([]);
     setGreenCells([]);
+    setCapturedZones([])
 
     setGameStatus("playing");
 
@@ -338,12 +339,20 @@ export default function YoshisZonesGame() {
     const [gz, rz] = checkZones(newRedCells, greenCells);
 
     // Aquí se conectaría con la lógica de IA para el movimiento del Yoshi verde
-    // Por ahora, simplemente cambiamos el turno de vuelta al jugador después de un tiempo
+  
+    /* if (isGameOver()) {
+      getWinnerMessage(gz, rz); // actualiza el estado `winner` para mostrar pantalla visual
+      setGameStatus(
+        gz > rz
+          ? "green-wins"
+          : rz > gz
+          ? "red-wins"
+          : "draw"
+      );
+      return;
+    } */
     setTimeout(() => {
       if (greenYoshiPosition) {
-        // Simular un movimiento aleatorio del Yoshi verde
-        //simulateGreenYoshiMove(greenYoshiPosition, newBoard)
-        //Obtener movimiento de Yoshi Verde
         getGreenYoshiMovement(
           greenYoshiPosition,
           newPos,
@@ -355,38 +364,10 @@ export default function YoshisZonesGame() {
         );
       }
     }, 500);
-
-    if (isGameOver()) {
-      getWinnerMessage(); // actualiza el estado `winner` para mostrar pantalla visual
-      setGameStatus(
-        greenZones > redZones
-          ? "green-wins"
-          : redZones > greenZones
-          ? "red-wins"
-          : "draw"
-      );
-      return;
-    }
-setTimeout(() => {
-    if (greenYoshiPosition) {
-      getGreenYoshiMovement(
-        greenYoshiPosition,
-        newPos,
-        greenCells,
-        newRedCells,
-        gz,
-        rz,
-        newBoard
-      );
-    }
-  }, 500);
-
-
   };
 
   // Añadir una función para simular el movimiento del Yoshi verde (máquina)
   const getGreenYoshiMovement = async (
-    
     currGreenYoshiPos: Position,
     currRedYoshiPos: Position,
     currGreenCells: any,
@@ -472,10 +453,9 @@ setTimeout(() => {
 
     let _greenZones = 0;
     let _redZones = 0;
-    const newCaptured = [...capturedZones];
+    const newCaptured: any[] = [];
 
     specialZones.forEach((zone, index) => {
-      if (newCaptured.some((z) => z.index === index)) return; // ya fue capturada
 
       let greenCount = 0;
       let redCount = 0;
@@ -498,6 +478,10 @@ setTimeout(() => {
     setCapturedZones(newCaptured);
     setGreenZones(_greenZones);
     setRedZones(_redZones);
+    
+    if(_greenZones + _redZones == 4){
+      getWinnerMessage(_greenZones, _redZones)
+    }
 
     return [_greenZones, _redZones];
   };
@@ -509,11 +493,11 @@ setTimeout(() => {
     });
   }
 
-  function getWinnerMessage(): void {
-    if (greenZones > redZones) {
+  function getWinnerMessage(_greenZones: number, _redZones: number): void {
+    if (_greenZones > _redZones) {
       setAudioGame("win");
       setWinner("green"); // nuevo: guardamos el ganador en estado
-    } else if (redZones > greenZones) {
+    } else if (_redZones > _greenZones) {
       setAudioGame("lose");
       setWinner("red");
     } else {

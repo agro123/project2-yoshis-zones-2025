@@ -72,9 +72,9 @@ def heuristica(nodo: Nodo):
         utilidad += 5
     
     # distancia a una casilla libre
-    distancia = menor_distancia_caballo(nodo)
+    distancia = menor_distancia_manhattan(nodo)
     print(f"Distancia ====> {nodo.pos_verde} {distancia}")
-    utilidad -= distancia
+    #utilidad -= distancia
 
     return utilidad
 
