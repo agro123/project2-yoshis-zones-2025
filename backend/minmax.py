@@ -11,7 +11,7 @@ def minimax_poda(nodo: Nodo, profundidad_limite):
     #Evaluar la utilidad de las hojas
     if nodo.profundidad == profundidad_limite:
         nodo.utilidad = heuristica(nodo)
-        print('--------->', nodo.utilidad)
+        print(nodo.pos_verde, 'Utilidad--------->', nodo.utilidad)
         return nodo.utilidad
 
     jugador = 'verde' if nodo.tipo == 'max' else 'rojo'
@@ -19,7 +19,7 @@ def minimax_poda(nodo: Nodo, profundidad_limite):
     posicion_contricante = nodo.pos_verde if jugador == 'rojo' else nodo.pos_rojo
     ocupadas = nodo.casillas_verde | nodo.casillas_rojo | {posicion_contricante}
     movimientos = movimientos_validos(posicion_actual, ocupadas, nodo.casillas_verde, nodo.casillas_rojo)
-    print('movimientos.', movimientos)
+    #print('movimientos.', movimientos)
     if nodo.tipo == 'max':
         valor = float('-inf')
         for mov in movimientos:
