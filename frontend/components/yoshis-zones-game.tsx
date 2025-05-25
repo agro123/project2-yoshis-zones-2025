@@ -6,6 +6,7 @@ import GameInfo from "./game-info";
 import DifficultySelector from "./difficulty-selector";
 import AudioControl from "./audio-control";
 import GameOverScreen from "./GameOverScreen";
+import { log } from "console";
 
 // Tipos para el juego
 export type CellState =
@@ -138,6 +139,7 @@ export default function YoshisZonesGame() {
 
   // Verificar si una celda pertenece a una zona ya capturada
   const isCellBlocked = (row: number, col: number): boolean => {
+    console.log('capturedzones: ', capturedZones);
     return capturedZones.some(({ index }) =>
       specialZones[index].some((cell) => cell.row === row && cell.col === col)
     );
@@ -284,13 +286,21 @@ export default function YoshisZonesGame() {
 
   // Filtrar movimientos que no estén en zonas capturadas
   const getUnblockedMoves = (moves: Position[]) => {
+    console.log("Movimientos válidos:", moves);
     return moves.filter((pos) => !isCellBlocked(pos.row, pos.col));
+    
   };
 
   // Actualizar la función handlePlayerMove para que maneje el movimiento del jugador (Yoshi rojo)
   const handlePlayerMove = (row: number, col: number) => {
-    if (isGreenTurn || gameStatus !== "playing" || !redYoshiPosition) return;
-    if (isCellBlocked(row, col)) return; // 🚫 No pintar en zona capturada
+    if (isGreenTurn || gameStatus !== "playing" || !redYoshiPosition) {
+      console.log("entra al primer if");
+      return;
+    }
+    if (isCellBlocked(row, col)) {
+      console.log("entra al segundo if: ",(isCellBlocked(row, col)), row, col);
+      return;
+    } // 🚫 No pintar en zona capturada
 
     // 🚫 Verificar si la celda ya está pintada (por verde o por rojo)
     const yaPintada = greenCells.some(([r, c]) => r === row && c === col) ||
@@ -302,11 +312,15 @@ export default function YoshisZonesGame() {
     }
     // Verificar si el movimiento es válido
     const validMoves = getValidMoves(redYoshiPosition);
+    console.log("Movimientos válidos:", validMoves);
     const isValidMove = validMoves.some(
       (move) => move.row === row && move.col === col
     );
 
-    if (!isValidMove) return;
+    if (!isValidMove) {
+      console.log("tercer if");
+      return
+    }
 
     // Crear una copia del tablero
     const newBoard = [...board.map((row) => [...row])];
