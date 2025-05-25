@@ -77,7 +77,7 @@ utilidad = (zonas_verde - zonas_rojo) * 10 \
 """
 
 
-def heuristica(nodo: Nodo):
+def heuristica2(nodo: Nodo):
     utilidad = 0
 
     # Se completan mas zonas que rojo
