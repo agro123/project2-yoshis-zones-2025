@@ -380,6 +380,7 @@ setTimeout(() => {
 
   // Añadir una función para simular el movimiento del Yoshi verde (máquina)
   const getGreenYoshiMovement = async (
+    
     currGreenYoshiPos: Position,
     currRedYoshiPos: Position,
     currGreenCells: any,
