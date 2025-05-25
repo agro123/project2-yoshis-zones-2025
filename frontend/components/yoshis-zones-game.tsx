@@ -200,8 +200,6 @@ export default function YoshisZonesGame() {
       //simulateGreenYoshiMove(greenPos, newBoard)
       getGreenYoshiMovement(greenPos, redPos, [], [], 0, 0, newBoard);
     }, 1000);
-    // Reproducir sonido de inicio de juego (cuando se implemente el audio)
-    playSound("gameStart");
   };
 
   // Función para reproducir sonidos (placeholder para futura implementación)
@@ -402,7 +400,7 @@ setTimeout(() => {
       const validMoves = getUnblockedMoves(getValidMoves(_greenPos));
       if (validMoves.length === 0) return; // no hay movimientos válidos
 
-      const response = await fetch("http://127.0.0.1:5000/play", {
+      const response = await fetch("http://127.0.0.1:32001/play", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -424,13 +422,13 @@ setTimeout(() => {
 
       const [row, col]: [number, number] = await response.json();
       if (isCellBlocked(row, col)) {
-  console.warn("⚠️ Movimiento inválido: IA intentó moverse a zona capturada. Se ignora movimiento.");
-  console.log("🔁 Movimiento sugerido por IA:", row, col);
-console.log("📛 Casilla bloqueada:", isCellBlocked(row, col));
-console.log("🎯 Tablero actual:", currBoard);
+        console.warn("⚠️ Movimiento inválido: IA intentó moverse a zona capturada. Se ignora movimiento.");
+        console.log("🔁 Movimiento sugerido por IA:", row, col);
+        console.log("📛 Casilla bloqueada:", isCellBlocked(row, col));
+        console.log("🎯 Tablero actual:", currBoard);
 
-  return;
-}
+        return;
+      }
 
       const newMove: Position = { row, col };
       console.log("Respuesta del servidor:", newMove);
@@ -537,6 +535,8 @@ console.log("🎯 Tablero actual:", currBoard);
   // Se ejecuta solo una vez al montar el componente (inicializa juego y audio)
   useEffect(() => {
     initializeGame();
+    // Reproducir sonido de inicio de juego (cuando se implemente el audio)
+    playSound("gameStart");
 
     if (!isMuted && backgroundMusicRef.current) {
       backgroundMusicRef.current
@@ -566,8 +566,6 @@ console.log("🎯 Tablero actual:", currBoard);
       }
     }
   }, [isMuted]); // ✅ Solo controla el audio
-
-  useEffect(() => {}, [gameStatus]);
 
   const redMovements = useMemo(
     () =>
