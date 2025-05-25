@@ -50,14 +50,37 @@ def menor_distancia_manhattan(nodo: Nodo):
 
     return min(abs(f - casilla[0]) + abs(c - casilla[1]) for casilla in posibles_casillas)
 
+def distancia_de_caballo_a_zona_libre(pos, nodo: Nodo):
+    ocupadas = nodo.casillas_verde | nodo.casillas_rojo
+    visitadas = set()
+    cola = deque()
+    cola.append((pos, 0))
+
+    while cola:
+        actual, pasos = cola.popleft()
+        if actual in visitadas:
+            continue
+        visitadas.add(actual)
+
+        for zona in ZONAS:
+            for celda in zona:
+                if celda == actual and celda not in ocupadas:
+                    return pasos  # ya llegaste
+
+        for dx, dy in MOVIMIENTOS_CABALLO:
+            x, y = actual[0] + dx, actual[1] + dy
+            if 0 <= x < 8 and 0 <= y < 8:
+                cola.append(((x, y), pasos + 1))
+
+
 def heuristica(nodo: Nodo):
     #Zonas ganadas
     score = (nodo.zonas_verde - nodo.zonas_rojo) * 10
     #Casillas pintadas
     score += len(nodo.casillas_verde) - len(nodo.casillas_rojo)
     #Proximidad a casillas por pintar
-    dist_verde = menor_distancia_caballo(nodo.pos_verde, nodo)
-    dist_rojo = menor_distancia_caballo(nodo.pos_rojo, nodo)
+    dist_verde = distancia_de_caballo_a_zona_libre(nodo.pos_verde, nodo)
+    dist_rojo = distancia_de_caballo_a_zona_libre(nodo.pos_rojo, nodo)
 
     # Penalizar si está lejos de zona libre
     if dist_verde != float('inf') and dist_rojo != float('inf'):
