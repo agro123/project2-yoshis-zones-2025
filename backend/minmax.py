@@ -94,7 +94,7 @@ def obtener_mejor_movimiento(estado_actual, dificultad):
     fin = time.time() * 1000  # Tiempo final
     tiempo_ejecucion = fin - inicio
     print('Tiempo de ejecucion: ', tiempo_ejecucion)
-    with open("analisis.csv", "a", encoding="utf-8") as f:
+    with open("performance.csv", "a", encoding="utf-8") as f:
                 f.write(f"{profundidad}, {tiempo_ejecucion}\n")
     print(raiz.utilidad, f'======================++>', raiz.mejor_mov)
     return raiz.mejor_mov
