@@ -1,55 +1,30 @@
-from helpers import ZONAS, MOVIMIENTOS_CABALLO, movimiento_es_valido
+from helpers import ZONAS, MOVIMIENTOS_CABALLO, obtener_cuadrante
 from collections import deque
 from nodo import Nodo
-
-#distancia caballo a una casilla de una zona no ganada
-def menor_distancia_caballo(nodo: Nodo):
-    currPos = nodo.pos_verde
-    casillas_destino = set().union(*ZONAS)
-
-    if currPos in casillas_destino:
-        return 0
-
-    posibles_casillas = []
-    for casilla in casillas_destino:
-        if movimiento_es_valido(
-            nodo.pos_verde,
-            {"casillas_verde": nodo.casillas_verde, "casillas_rojo": nodo.casillas_rojo}
-        ):
-            posibles_casillas.append(casilla)
-
-    visitado = set()
-    cola = deque([(currPos, 0)])
-
-    while cola:
-        (x, y), dist = cola.popleft()
-        if (x, y) in posibles_casillas:
-            return dist
-        for dx, dy in MOVIMIENTOS_CABALLO:
-            nx, ny = x + dx, y + dy
-            if (nx, ny) not in visitado and (0 <= nx < 8 and 0 <= ny < 8):  # Asumiendo tablero 8x8
-                visitado.add((nx, ny))
-                cola.append(((nx, ny), dist + 1))
-
-    return float('inf')
 
 #distancia manhattan a una casilla de una zona no ganada
 def menor_distancia_manhattan(nodo: Nodo):
     currPos = nodo.pos_verde
-    casillas = set().union(*ZONAS)
-    posibles_casillas = []
+    posibles_zona = []
 
-    if currPos in casillas:
-        return 0
-
-    for casilla in casillas:
-        if movimiento_es_valido(nodo.pos_verde, {"casillas_verde": nodo.casillas_verde, "casillas_rojo": nodo.casillas_rojo}):
-            posibles_casillas.append(casilla)
+    for zona in ZONAS:
+        celdas_pintadas_rojo = zona & nodo.casillas_rojo
+        celdas_pintadas_verde = zona & nodo.casillas_verde
+        if len(celdas_pintadas_rojo) >= 3:
+            continue
+        elif len(celdas_pintadas_verde) >=3:
+            continue
+        else:
+            posibles_zona.append(zona)
 
     f, c = currPos
 
-    return min(abs(f - casilla[0]) + abs(c - casilla[1]) for casilla in posibles_casillas)
+    if posibles_zona:
+        return min(abs(f - casilla[0]) + abs(c - casilla[1]) for casilla in set().union(*posibles_zona))
 
+    return float('inf')
+
+#Distancia caballo a zona libre
 def distancia_de_caballo_a_zona_libre(pos, nodo: Nodo):
     ocupadas = nodo.casillas_verde | nodo.casillas_rojo
     visitadas = set()
@@ -62,16 +37,26 @@ def distancia_de_caballo_a_zona_libre(pos, nodo: Nodo):
             continue
         visitadas.add(actual)
 
+        # Buscar si la posición actual pertenece a una zona "válida"
         for zona in ZONAS:
-            for celda in zona:
-                if celda == actual and celda not in ocupadas:
-                    return pasos  # ya llegaste
+            celdas_pintadas = zona & nodo.casillas_rojo
+            if len(celdas_pintadas) >= 3:
+                continue  # zona perdida, no tiene sentido ir
 
+            celdas_pintadas = zona & nodo.casillas_verde
+            if len(celdas_pintadas) >= 3:
+                continue  # zona ganada, no tiene sentido ir
+
+            if actual in zona and actual not in ocupadas:
+                return pasos  # celda libre en una zona aún recuperable
+
+        # Expandir movimientos de caballo
         for dx, dy in MOVIMIENTOS_CABALLO:
             x, y = actual[0] + dx, actual[1] + dy
             if 0 <= x < 8 and 0 <= y < 8:
                 cola.append(((x, y), pasos + 1))
 
+    return float('inf')  # No hay zonas útiles accesibles
 
 def heuristica(nodo: Nodo):
     #Zonas ganadas
@@ -103,39 +88,54 @@ utilidad = (zonas_verde - zonas_rojo) * 10 \
 def heuristica2(nodo: Nodo):
     utilidad = 0
 
-    # Se completan mas zonas que rojo
-    if nodo.zonas_verde + nodo.zonas_rojo == 4 and nodo.zonas_verde > nodo.zonas_rojo:
-        return float('inf')  #Si se completan mas zonas que rojo
-    
-    """     if nodo.zonas_verde + nodo.zonas_rojo == 4 and nodo.zonas_rojo > nodo.zonas_verde:
-        return float('-inf')  #Si se completan mas zonas que rojo
-    
-    if nodo.zonas_verde + nodo.zonas_rojo == 4 and nodo.zonas_rojo == nodo.zonas_verde:
-        return 0 #Si se empata """
-    
-    # Se completa una zona
-    if nodo.zonas_verde > nodo.padre.zonas_verde:
-        utilidad += 10
-    
-    # Se completa una casilla en una zona especial
-    if len(nodo.casillas_verde) > len(nodo.padre.casillas_verde):
-        utilidad += 5
-    
-    # distancia a una casilla libre
-    distancia = menor_distancia_manhattan(nodo)
-    print(f"Distancia ====> {nodo.pos_verde} {distancia}")
-    #utilidad -= distancia
+    total_zonas = nodo.zonas_verde + nodo.zonas_rojo
+    if total_zonas == 4:
+        if nodo.zonas_verde > nodo.zonas_rojo:
+            return 1000  # Victoria
+        elif nodo.zonas_verde < nodo.zonas_rojo:
+            return -1000  # Derrota
+        else:
+            return 0  # Empate
+
+    # 1. Zonas completadas
+    utilidad += nodo.zonas_verde * 20
+    utilidad -= nodo.zonas_rojo * 20  # penaliza progreso del rojo
+
+    # 2. Casillas pintadas
+    utilidad += len(nodo.casillas_verde) * 2
+    utilidad -= len(nodo.casillas_rojo) * 1.5  # penaliza rojo, menor peso
+
+    # 3. Cuadrantes estratégicos (para verde y rojo)
+    cuadrante_verde = obtener_cuadrante(nodo.pos_verde)
+
+    for zona in ZONAS:
+        cuadrante_zona = obtener_cuadrante(next(iter(zona)))
+        c_verde = len(zona & nodo.casillas_verde)
+        c_rojo = len(zona & nodo.casillas_rojo)
+
+        if c_rojo >= 3 or c_verde >= 3:
+            if cuadrante_verde == cuadrante_zona:
+                utilidad -= 10  # verde en zona perdida
+        else:
+            # Zonas disputadas: premiar dominio parcial verde
+            if c_verde == 2:
+                utilidad += 6
+            elif c_verde == 3:
+                utilidad += 10
+            # Penalizar dominio parcial del rojo
+            if c_rojo == 2:
+                utilidad -= 5
+            elif c_rojo == 3:
+                utilidad -= 8
+
+    # 4. Distancia a celda útil (verde)
+    dist_verde = distancia_de_caballo_a_zona_libre(nodo.pos_verde, nodo)
+    if dist_verde != float('inf'):
+        utilidad -= dist_verde * 1.5
+
+    # 5. Cercanía del rojo a zonas libres (opcional)
+    dist_rojo = distancia_de_caballo_a_zona_libre(nodo.pos_rojo, nodo)
+    if dist_rojo != float('inf'):
+        utilidad += dist_rojo * 1.2  # mientras más lejos esté, mejor para verde
 
     return utilidad
-
-
-"""
-1. Si se completan mas zonas que rojo
-2. Si se completa una zona un valor positivo alto
-3. Si se completa una casilla en una zona especial un positivo medio
-3.5 distancia caballo 
-4. Si se empata en zonas  0
-5. Si se acerca a una casilla por pintar un valor negativo bajo
-7. Si se aleja de la casilla por pintar un valor negativo alto
-6. Si se completa menos zonas que rojo
-"""
