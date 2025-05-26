@@ -97,15 +97,15 @@ def heuristica2(nodo: Nodo):
         else:
             return 0  # Empate
 
-    # 1. Zonas completadas
+    # Zonas completadas
     utilidad += nodo.zonas_verde * 20
     utilidad -= nodo.zonas_rojo * 20  # penaliza progreso del rojo
 
-    # 2. Casillas pintadas
+    # Casillas pintadas
     utilidad += len(nodo.casillas_verde) * 2
     utilidad -= len(nodo.casillas_rojo) * 1.5  # penaliza rojo, menor peso
 
-    # 3. Cuadrantes estratégicos (para verde y rojo)
+    #Cuadrantes estratégicos determina si necesario evitar o estar en un cuadrante
     cuadrante_verde = obtener_cuadrante(nodo.pos_verde)
 
     for zona in ZONAS:
@@ -115,27 +115,18 @@ def heuristica2(nodo: Nodo):
 
         if c_rojo >= 3 or c_verde >= 3:
             if cuadrante_verde == cuadrante_zona:
-                utilidad -= 10  # verde en zona perdida
+                utilidad -= 10  # no hay necesidad de estar aca
         else:
-            # Zonas disputadas: premiar dominio parcial verde
+            #  zona dominada parcialmente por verde
             if c_verde == 2:
-                utilidad += 6
-            elif c_verde == 3:
                 utilidad += 10
-            # Penalizar dominio parcial del rojo
+            # Dominio parcial del rojo
             if c_rojo == 2:
-                utilidad -= 5
-            elif c_rojo == 3:
                 utilidad -= 8
 
     # 4. Distancia a celda útil (verde)
     dist_verde = distancia_de_caballo_a_zona_libre(nodo.pos_verde, nodo)
     if dist_verde != float('inf'):
         utilidad -= dist_verde * 1.5
-
-    # 5. Cercanía del rojo a zonas libres (opcional)
-    dist_rojo = distancia_de_caballo_a_zona_libre(nodo.pos_rojo, nodo)
-    if dist_rojo != float('inf'):
-        utilidad += dist_rojo * 1.2  # mientras más lejos esté, mejor para verde
 
     return utilidad
