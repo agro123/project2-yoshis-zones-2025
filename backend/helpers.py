@@ -9,15 +9,30 @@
 #    [1, 1, 1, 0, 0, 1, 1, 1]
 #]
 
+"""
+Zonas especiales en todo el mapa, estas serán utilizadas para calcular el momento en el que una de estas estan ocupadas o van a 
+ser ocupadas por un jugador
+"""
 special_zone1 = [(0,0), (0,1), (0,2), (1,0), (2,0)]
 special_zone2 = [(0,5), (0,6), (0,7), (1,7), (2,7)]
 special_zone3 = [(5,0), (6,0), (7,0), (7,1), (7,2)]
 special_zone4 = [(5,7), (6,7), (7,7), (7,5), (7,6)]
 
+""" Guarda en general todas las posiciones especiales del tablero, usa set para evitar posiciones repetidas """
 ZONAS = [set(special_zone1), set(special_zone2), set(special_zone3), set(special_zone4)]
 
-#Recuenta cuántas zonas ha ganado cada jugador.
+
 def contar_zonas(estado):
+    """
+    Cuenta las conas especiales tanto rojas como verdes que han sido ocupadas ya.
+
+    Args:
+        estado dict[string]  : Diccionario que contiene información sobre el estado actual de las casillas de cada color
+
+    Returns:
+        tuple(int,int) : Tupla con el calculo de conteo de las zonas verdes y zonas rojas respectivamente
+    
+    """
     zonas_verde = zonas_rojo = 0
     for zona in ZONAS:
         c_verde = len(zona & estado["casillas_verde"])
@@ -30,13 +45,28 @@ def contar_zonas(estado):
 
     return zonas_verde, zonas_rojo
 
-#Todos los movimientos posibles en L
+""" Estos son todos los movimientos que un yoshi es capaz de hacer, al sumar estas coordenadas a la posición actual del yoshi
+se puede calcular su movimiento """
+
 MOVIMIENTOS_CABALLO = [
     (2, 1), (1, 2), (-1, 2), (-2, 1),
     (-2, -1), (-1, -2), (1, -2), (2, -1)
 ]
 
 def obtener_cuadrante(pos):
+
+    """
+    El tablaro esta dividido en 4 cuadrantes, esta función permite calcular a partir de la posición el cuadrante en el que se encuentra
+    un jugador en un momento dado.
+
+    Args:
+        pos tuple(int,int) : posición del jugador a la que se quiere calcular el cuadrante
+    
+    Returns:
+        Cuadrante al que pertenece ("Q1","Q2","Q3","Q4")
+    
+    """
+
     x, y = pos
     if x < 4 and y < 4:
         return 'Q1'
@@ -48,6 +78,18 @@ def obtener_cuadrante(pos):
         return 'Q4'
 
 def movimientos_validos(nodo, jugador):
+
+    """
+    Genera todas las posiciones válidas a las que se puede mover un yoshi desde una posición dada en el tablero.
+
+    Args:
+        Nodo: Posición actual del jugador (x, y).
+        jugador: color actual del yoshi a moverse
+
+    Returns:
+        list[tuple[int, int]]: Lista de coordenadas válidas que el caballo puede alcanzar desde la posición dada.
+    """
+     
     posicion_actual = nodo.pos_verde if jugador == 'verde' else nodo.pos_rojo
     posicion_contricante = nodo.pos_verde if jugador == 'rojo' else nodo.pos_rojo
     casillas_ocupadas = nodo.casillas_verde | nodo.casillas_rojo | {posicion_contricante}
@@ -87,6 +129,20 @@ def movimientos_validos(nodo, jugador):
     return movs
 
 def movimiento_es_valido(mov, nodo):
+
+    """
+    Calcula si un movimiento de un yoshi es valido hacia alguna de las casillas especiales, es decir, si un movimiento de un yoshi
+    esta dirigido hacia una casilla especial ya ocupada entonces no puede ser contado como una casilla pintada por ese jugador
+
+    Args:
+        mov: es el movimiento al que se quiere calcular su validez
+        nodo: estado actual del jugador
+
+    Returns:
+        True si es un movimiento valido, False si no es posible este movimiento
+    
+    """
+
     casillas_pintadas = nodo.casillas_verde | nodo.casillas_rojo
 
     # Si la casilla ya está pintada, no es válida

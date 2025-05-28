@@ -2,6 +2,20 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from minmax import obtener_mejor_movimiento
 
+"""
+Juego de Caballos en Tablero 8x8
+
+Dos jugadores que son yoshi's se mueven como caballos de ajedrez con el objetivo de conquistar la mayor cantidad de casillas especiales.
+Cada jugador comienza de manera aleatoria en el tablero. En cada turno, el jugador puede moverse a una casilla válida según el patrón
+de movimiento del caballo. Las casillas especiales por las que pasa un jugador se "pintan" de su color.  
+Estas casillas ya no son accesibles para el jugador de otros color.
+
+Estructura del código:
+- helpers: Calculo del estado del juego (tablero, posiciones, zonas)
+- Heurística: Evaluación de estados
+- Minimax: Búsqueda del mejor movimiento para el jugador actual (maquina)
+"""
+
 app = Flask(__name__)
 CORS(app)
 

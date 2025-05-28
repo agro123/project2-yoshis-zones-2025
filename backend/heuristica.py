@@ -4,6 +4,26 @@ from nodo import Nodo
 
 #distancia manhattan a una casilla de una zona no ganada
 def menor_distancia_manhattan(nodo: Nodo):
+
+    """
+    Calcula la menor distancia de Manhattan desde la posición actual de un jugador
+    hacia cualquier celda libre dentro de las zonas estratégicas disponibles.
+
+    Una zona estratégica es ignorada si ya ha sido conquistada por cualquiera de los jugadores,
+    es decir, si tiene al menos 3 celdas pintadas por el jugador rojo o por el verde.
+
+    Args:
+        nodo (Nodo): Estado actual del juego, que contiene:
+            - nodo.pos_verde: posición actual del jugador verde (tupla (fila, columna)).
+            - nodo.casillas_rojo: conjunto de coordenadas conquistadas por el jugador rojo.
+            - nodo.casillas_verde: conjunto de coordenadas conquistadas por el jugador verde.
+
+    Returns:
+        float: La menor distancia de Manhattan desde la posición del jugador verde hasta
+            alguna celda libre de las zonas aún no conquistadas. Si no hay zonas disponibles,
+            devuelve `float('inf')`.
+    """
+
     currPos = nodo.pos_verde
     posibles_zona = []
 
@@ -26,6 +46,29 @@ def menor_distancia_manhattan(nodo: Nodo):
 
 #Distancia caballo a zona libre
 def distancia_de_caballo_a_zona_libre(pos, nodo: Nodo):
+
+    """
+    Calcula la cantidad mínima de movimientos de caballo necesarios para que un jugador 
+    (en una posición dada) llegue a una celda libre perteneciente a alguna zona especial
+    que aún no haya sido conquistada (por ninguno de los jugadores).
+
+    Una zona se considera conquistada si tiene al menos 3 casillas pintadas por el jugador 
+    rojo o por el verde. Las zonas conquistadas se ignoran en el cálculo.
+
+    Se utiliza búsqueda en anchura (BFS) para explorar todas las posibles posiciones alcanzables 
+    con movimientos de caballo hasta encontrar una celda válida.
+
+    Args:
+        pos (tuple): Posición actual del jugador (fila, columna).
+        nodo (Nodo): Estado actual del juego, que contiene:
+            - nodo.casillas_rojo: conjunto de coordenadas ocupadas por el jugador rojo.
+            - nodo.casillas_verde: conjunto de coordenadas ocupadas por el jugador verde.
+
+    Returns:
+        float: Número mínimo de movimientos de caballo para alcanzar una celda válida.
+            Si no existe ninguna celda libre en zonas recuperables, retorna `float('inf')`.
+    """
+
     ocupadas = nodo.casillas_verde | nodo.casillas_rojo
     visitadas = set()
     cola = deque()
@@ -59,6 +102,20 @@ def distancia_de_caballo_a_zona_libre(pos, nodo: Nodo):
     return float('inf')  # No hay zonas útiles accesibles
 
 def heuristica(nodo: Nodo):
+    """
+    Evalúa el estado actual del tablero desde la perspectiva del jugador (maquina).
+
+    La función considera:
+    - Cantidad de casillas dominadas por el jugador
+    - Distancia a zonas estratégicas
+    - Cantidad de casillas pintadas
+
+    Args:
+        nodo : Estado actual del jugador.
+
+    Returns:
+        float: Valor heurístico del estado.
+    """
     #Zonas ganadas
     score = (nodo.zonas_verde - nodo.zonas_rojo) * 10
     #Casillas pintadas
@@ -73,19 +130,32 @@ def heuristica(nodo: Nodo):
 
     return score
 
-"""Zonas ganadas: Se calcula la diferencia entre la cantidad de zonas especiales ganadas por el Yoshi verde y el Yoshi rojo, multiplicada por un peso alto (10). Esto refleja el objetivo principal del juego.
+def heuristica2(nodo: Nodo):
 
-Casillas pintadas: Se calcula la diferencia entre la cantidad de casillas de zona ya pintadas por el Yoshi verde y el Yoshi rojo. Este factor indica la ventaja posicional parcial en zonas aún no completadas.
+    """
+    Una segunda versión de la heuristica, calcula la conveniencia del siguiente movimiento de un jugador(maquina).
 
-Proximidad a casillas por pintar: Se estima la distancia (medida como distancia Manhattan) desde la posición actual de cada Yoshi hacia la casilla más cercana no pintada de cualquier zona especial. Mientras más cerca esté el Yoshi verde y más lejos el rojo, mayor será la utilidad. Este componente anticipa oportunidades estratégicas de dominio territorial.
+    La función considera:
+    - Zonas ganadas : Se calcula la diferencia entre la cantidad de zonas especiales ganadas por el Yoshi verde y el 
+        Yoshi rojo, multiplicada por un peso alto (10). Esto refleja el objetivo principal del juego.
 
-utilidad = (zonas_verde - zonas_rojo) * 10 \
+    - Casillas pintadas: Se calcula la diferencia entre la cantidad de casillas de zona ya pintadas por el Yoshi verde y 
+        el Yoshi rojo. Este factor indica la ventaja posicional parcial en zonas aún no completadas.
+
+    - Proximidad a casillas por pintar: Se estima la distancia (medida como distancia Manhattan) desde la posición actual 
+        de cada Yoshi hacia la casilla más cercana no pintada de cualquier zona especial. Mientras más cerca esté el Yoshi verde 
+        y más lejos el rojo, mayor será la utilidad. Este componente anticipa oportunidades estratégicas de dominio territorial.
+
+    Args:
+        nodo : Estado actual del jugador.
+
+    Returns:
+        Utilidad: (zonas_verde - zonas_rojo) * 10 \
          + (casillas_verde - casillas_rojo) \
          + (distancia_rojo - distancia_verde) * 0.5
-"""
 
+    """
 
-def heuristica2(nodo: Nodo):
     utilidad = 0
 
     total_zonas = nodo.zonas_verde + nodo.zonas_rojo
