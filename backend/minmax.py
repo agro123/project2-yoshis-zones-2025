@@ -1,28 +1,44 @@
-from collections import deque
 from nodo import Nodo
-from helpers import movimientos_validos, contar_zonas
-from heuristica import heuristica
+from helpers import movimientos_validos
+from heuristica import heuristica, heuristica2
 import time
 
+# Define la profundidad máxima de búsqueda del algoritmo Minimax según la dificultad seleccionada
 DIFICULTAD = {"beginner": 2, "amateur": 4, "expert": 6}
+
 
 def minimax_poda(nodo: Nodo, profundidad_limite):
 
+    """
+    Implementa el algoritmo Minimax con poda alfa-beta para calcular el valor de utilidad 
+    de un nodo en un árbol de juego.
+
+    Este algoritmo explora los movimientos posibles hasta una profundidad determinada y 
+    asigna utilidades a los nodos terminales usando una función heurística. Durante la 
+    exploración, se aplican podas para evitar evaluar ramas innecesarias cuando ya se 
+    conoce que no afectarán la decisión óptima.
+
+    Args:
+        nodo (Nodo): Nodo actual del árbol de búsqueda, que representa un estado del juego.
+        profundidad_limite (int): Profundidad máxima permitida para la exploración.
+
+    Returns:
+        float: Valor de utilidad del nodo actual, calculado a través de Minimax con poda.
+    """
+
     #Evaluar la utilidad de las hojas
-    if nodo.profundidad == profundidad_limite:
-        nodo.utilidad = heuristica(nodo)
-        print('--------->', nodo.utilidad)
+    if nodo.profundidad == profundidad_limite or nodo.zonas_rojo + nodo.zonas_verde == 4:
+        nodo.set_utilidad(heuristica2(nodo))
         return nodo.utilidad
 
     jugador = 'verde' if nodo.tipo == 'max' else 'rojo'
-    posicion_actual = nodo.pos_verde if jugador == 'verde' else nodo.pos_rojo
-    posicion_contricante = nodo.pos_verde if jugador == 'rojo' else nodo.pos_rojo
-    ocupadas = nodo.casillas_verde | nodo.casillas_rojo | {posicion_contricante}
-    movimientos = movimientos_validos(posicion_actual, ocupadas)
-    print('movimientos.', movimientos)
+    movimientos = movimientos_validos(nodo, jugador)
+    #print('movimientos.', movimientos)
     if nodo.tipo == 'max':
         valor = float('-inf')
         for mov in movimientos:
+            """ if not movimiento_es_valido(mov, nodo):
+                continue """
             estado = nodo.simular_movimiento(jugador, mov)
             hijo = Nodo(
                 pos_verde=estado["pos_verde"],
@@ -41,13 +57,13 @@ def minimax_poda(nodo: Nodo, profundidad_limite):
             utilidad_hijo = minimax_poda(hijo, profundidad_limite)
             if utilidad_hijo > valor:
                 valor = utilidad_hijo
-                nodo.mejor_mov = mov 
-            nodo.alfa = max(nodo.alfa, valor)
+                nodo.set_mejor_mov(mov) 
+            nodo.set_alfa(max(nodo.alfa, valor))
 
             if nodo.beta <= nodo.alfa:
                 break  # Poda beta
 
-        nodo.utilidad = valor
+        nodo.set_utilidad(valor)
         return valor
     else:
         valor = float('inf')
@@ -67,79 +83,52 @@ def minimax_poda(nodo: Nodo, profundidad_limite):
             hijo.set_beta(nodo.beta)
 
             utilidad_hijo = minimax_poda(hijo, profundidad_limite)
-            
 
             if utilidad_hijo < valor:
                 valor = utilidad_hijo
-                nodo.mejor_mov = mov 
+                nodo.set_mejor_mov(mov) 
             
-            nodo.beta = min(nodo.beta, valor)
+            nodo.set_beta(min(nodo.beta, valor))
 
             if nodo.beta <= nodo.alfa:
                 break  # Poda alfa
 
-        nodo.utilidad = valor
+        nodo.set_utilidad(valor)
 
         return valor
 
-#Construir el arbol con bfs y despues aplicar min max
-def bfs_minmax(raiz: Nodo, profundidad):
-    queue = deque()
-    queue.append(raiz)
-    while queue:
-        node: Nodo = queue.popleft()
-
-        if node.profundidad == profundidad:
-            node.set_utilidad(heuristica(node))
-            minimax(node)
-            print('--------->', node.utilidad)
-            continue
-
-        # Determinar jugador actual y su posición
-        jugador = 'verde' if node.tipo == "max" else 'rojo'
-        posicion_actual = node.pos_verde if jugador == 'verde' else node.pos_rojo
-        posicion_contricante = node.pos_verde if jugador == 'rojo' else node.pos_rojo
-
-        # Calcular casillas ocupadas (incluyendo posición del nuevo nodo)
-        casillas_ocupadas = node.casillas_verde | node.casillas_rojo | {posicion_contricante}
-
-        # Obtener movimientos válidos desde la posición actual
-        movimientos = movimientos_validos(posicion_actual, casillas_ocupadas)
-        print('movimientos.', movimientos)
-        for movimiento in reversed(movimientos):
-            nuevo_estado = node.simular_movimiento(jugador, movimiento)
-            nuevo_nodo = Nodo(
-                    pos_verde=nuevo_estado["pos_verde"],
-                    pos_rojo=nuevo_estado["pos_rojo"],
-                    casillas_verde=nuevo_estado["casillas_verde"],
-                    casillas_rojo=nuevo_estado["casillas_rojo"],
-                    zonas_verde=nuevo_estado["zonas_verde"],
-                    zonas_rojo=nuevo_estado["zonas_rojo"],
-                    padre=node,
-                    tipo='min' if node.tipo == "max" else 'max',
-                )
-            queue.appendleft(nuevo_nodo)
-
-    return raiz
-
-def minimax(nodo: Nodo):
-    #Evaluar la utilidad de las hojas
-    if nodo.profundidad == 0:
-        #retornar utilidad del nodo final
-        return nodo.utilidad
-
-    padre: Nodo = nodo.padre
-    if padre.tipo == 'max':
-        if padre.utilidad < nodo.utilidad:
-            padre.set_utilidad(nodo.utilidad)
-            padre.set_mejor_mov(nodo.pos_verde)
-        return minimax(padre)
-    else:
-        if padre.utilidad > nodo.utilidad:
-            padre.set_utilidad(nodo.utilidad)
-        return minimax(padre)
-
 def obtener_mejor_movimiento(estado_actual, dificultad):
+
+    """
+    Determina el mejor movimiento posible para un jugador (maquina) a partir de un estado actual del juego,
+    utilizando el algoritmo Minimax con poda alfa-beta.
+
+    Esta función inicializa el nodo raíz con el estado actual del tablero, establece la profundidad de búsqueda
+    en función del nivel de dificultad proporcionado, ejecuta el algoritmo de búsqueda y mide el tiempo
+    de ejecución. Finalmente, retorna el movimiento que maximiza la utilidad para el jugador (maquina).
+
+    Además, registra el tiempo de ejecución en un archivo CSV ("performance.csv") para facilitar análisis
+    de rendimiento posteriores.
+
+    Args:
+        estado_actual (dict): Un diccionario con el estado actual del juego, que debe contener:
+            - "pos_verde" (tuple): Posición actual del jugador verde en el tablero.
+            - "pos_rojo" (tuple): Posición actual del jugador rojo en el tablero.
+            - "casillas_verde" (set): Conjunto de casillas ya ocupadas por el jugador verde.
+            - "casillas_rojo" (set): Conjunto de casillas ya ocupadas por el jugador rojo.
+            - "zonas_verde" (int): Cantidad de zonas especiales capturadas por el jugador verde.
+            - "zonas_rojo" (int): Cantidad de zonas especiales capturadas por el jugador rojo.
+
+        dificultad (str): Nivel de dificultad del algoritmo, que determina la profundidad del árbol de búsqueda.
+            Valores posibles:
+            - "beginner": profundidad = 2
+            - "amateur": profundidad = 4
+            - "expert": profundidad = 6
+
+    Returns:
+        tuple: Movimiento óptimo para el jugador (maquina), representado como una tupla de coordenadas (fila, columna).
+    """
+
     profundidad = DIFICULTAD[dificultad]
     raiz = Nodo(
         pos_verde=estado_actual["pos_verde"],
@@ -150,12 +139,13 @@ def obtener_mejor_movimiento(estado_actual, dificultad):
         zonas_rojo=estado_actual["zonas_rojo"],
         tipo='max',
     )
-
     inicio = time.time() * 1000  # Tiempo inicial
     minimax_poda(raiz, profundidad)
     #bfs_minmax(raiz, profundidad)
     fin = time.time() * 1000  # Tiempo final
     tiempo_ejecucion = fin - inicio
     print('Tiempo de ejecucion: ', tiempo_ejecucion)
-    print(raiz.utilidad, '=======================++>', raiz.mejor_mov)
+    with open("performance.csv", "a", encoding="utf-8") as f:
+                f.write(f"{profundidad}, {tiempo_ejecucion}\n")
+    print(raiz.utilidad, f'======================++>', raiz.mejor_mov)
     return raiz.mejor_mov

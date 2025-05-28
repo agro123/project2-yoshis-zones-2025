@@ -47,8 +47,9 @@ export default function GameCell({ state, isSpecialZone, isValidMove, isDarkSqua
 
   // Añadir indicador de movimiento válido
   const validMoveClass = isValidMove
-    ? "after:content-[''] after:absolute after:inset-0 after:bg-blue-400 after:opacity-30 after:rounded-full after:m-auto after:w-2/3 after:h-2/3"
-    : ""
+  ? "after:content-[''] after:absolute after:inset-0 after:bg-[url('/images/start.gif')] after:bg-contain after:bg-no-repeat after:bg-center after:opacity-60 after:w-4/5 after:h-4/5 after:m-auto"
+  : ""
+
     
   return (
     <div
