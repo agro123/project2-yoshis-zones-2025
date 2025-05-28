@@ -72,7 +72,7 @@ export default function YoshisZonesGame() {
     if (!backgroundMusicRef.current) {
       backgroundMusicRef.current = new Audio("/sounds/play.mp3");
       backgroundMusicRef.current.loop = true;
-      backgroundMusicRef.current.volume = 0.5;
+      backgroundMusicRef.current.volume = 0.2;
     }
 
     if (!isMuted) {
@@ -382,7 +382,7 @@ export default function YoshisZonesGame() {
       const validMoves = getUnblockedMoves(getValidMoves(_greenPos));
       if (validMoves.length === 0) return; // no hay movimientos válidos
 
-      const response = await fetch("http://127.0.0.1:32001/play", {
+      const response = await fetch("https://project2-yoshis-zones-2025.onrender.com//play", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -506,15 +506,7 @@ export default function YoshisZonesGame() {
     }
   }
 
-  useEffect(() => {
-    if (gameStatus === "green-wins") {
-      playSound("lose");
-    } else if (gameStatus === "red-wins") {
-      playSound("win");
-    } else if (gameStatus === "draw") {
-      playSound("draw");
-    }
-  }, [gameStatus]);
+  
 
   // Inicializar el juego al cargar el componente
   // Se ejecuta solo una vez al montar el componente (inicializa juego y audio)
@@ -551,6 +543,20 @@ export default function YoshisZonesGame() {
       }
     }
   }, [isMuted]); // ✅ Solo controla el audio
+
+
+useEffect(() => {
+  if (!winner || isMuted) return;
+
+  const soundMap = {
+    green: "lose", // El jugador (rojo) pierde
+    red: "win",    // El jugador gana
+    draw: "draw",  // Empate
+  };
+
+  playSound(soundMap[winner]);
+}, [winner, isMuted]);
+
 
   const redMovements = useMemo(
     () =>
