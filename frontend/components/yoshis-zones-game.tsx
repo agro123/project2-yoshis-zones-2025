@@ -34,6 +34,10 @@ export default function YoshisZonesGame() {
     null
   );
 
+
+  // Estado de carga (para animaciones o transiciones)
+  const [isLoading, setIsLoading] = useState(false);
+
   // Contadores de zonas
   const [greenZones, setGreenZones] = useState(0);
   const [redZones, setRedZones] = useState(0);
@@ -163,6 +167,7 @@ export default function YoshisZonesGame() {
 
   // Inicializar el juego
   const initializeGame = () => {
+    setIsLoading(true); // Activar spinner de carga
     setWinner(null); // oculta la pantalla de game over cuando reinicias
 
     // Crear un nuevo tablero vacío
@@ -200,6 +205,7 @@ export default function YoshisZonesGame() {
       // Simular un movimiento aleatorio del Yoshi verde
       //simulateGreenYoshiMove(greenPos, newBoard)
       getGreenYoshiMovement(greenPos, redPos, [], [], 0, 0, newBoard);
+      setIsLoading(false); // Desactivar spinner de carga
     }, 1000);
   };
 
@@ -381,7 +387,6 @@ export default function YoshisZonesGame() {
       if (!_greenPos || gameStatus !== "playing") return;
       const validMoves = getUnblockedMoves(getValidMoves(_greenPos));
       if (validMoves.length === 0) return; // no hay movimientos válidos
-
       const response = await fetch("https://project2-yoshis-zones-2025.onrender.com//play", {
         method: "POST",
         headers: {
@@ -397,7 +402,6 @@ export default function YoshisZonesGame() {
           dificultad: difficulty,
         }),
       });
-
       if (!response.ok) {
         throw new Error("Error en la petición");
       }
@@ -443,7 +447,7 @@ export default function YoshisZonesGame() {
       checkZones(currRedCells, newGreenCells);
     } catch (error) {
       console.error("Error al hacer el POST:", error);
-    }
+    } 
   };
 
   // Verificar si alguna zona especial ha sido capturada
@@ -564,8 +568,24 @@ useEffect(() => {
     [redYoshiPosition, isGreenTurn]
   );
 
+
+ // Componente de spinner de carga 
+const LoadingSpinner = () => (
+  <div className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-30 z-50">
+    <img 
+      src="/images/loading.gif" 
+      alt="Cargando..." 
+      className="w-24 h-24 mb-4" 
+    />
+    <span className="text-white text-lg font-semibold">Cargando...</span>
+  </div>
+);
+
+
+
   return (
     <div className="flex flex-col items-center gap-6 w-full max-w-4xl">
+       {isLoading && <LoadingSpinner />} {/* 👈 Condicional del spinner */}
       <div className="flex flex-col sm:flex-row items-center justify-between w-full max-w-2xl gap-4">
         <DifficultySelector
           difficulty={difficulty}
