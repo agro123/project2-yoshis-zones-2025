@@ -1,6 +1,6 @@
 from nodo import Nodo
 from helpers import movimientos_validos
-from heuristica import heuristica, heuristica2
+from heuristica import heuristica2
 import time
 
 # Define la profundidad máxima de búsqueda del algoritmo Minimax según la dificultad seleccionada
