@@ -2,48 +2,6 @@ from helpers import ZONAS, MOVIMIENTOS_CABALLO, obtener_cuadrante
 from collections import deque
 from nodo import Nodo
 
-#distancia manhattan a una casilla de una zona no ganada
-def menor_distancia_manhattan(nodo: Nodo):
-
-    """
-    Calcula la menor distancia de Manhattan desde la posición actual de un jugador
-    hacia cualquier celda libre dentro de las zonas estratégicas disponibles.
-
-    Una zona estratégica es ignorada si ya ha sido conquistada por cualquiera de los jugadores,
-    es decir, si tiene al menos 3 celdas pintadas por el jugador rojo o por el verde.
-
-    Args:
-        nodo (Nodo): Estado actual del juego, que contiene:
-            - nodo.pos_verde: posición actual del jugador verde (tupla (fila, columna)).
-            - nodo.casillas_rojo: conjunto de coordenadas conquistadas por el jugador rojo.
-            - nodo.casillas_verde: conjunto de coordenadas conquistadas por el jugador verde.
-
-    Returns:
-        float: La menor distancia de Manhattan desde la posición del jugador verde hasta
-            alguna celda libre de las zonas aún no conquistadas. Si no hay zonas disponibles,
-            devuelve `float('inf')`.
-    """
-
-    currPos = nodo.pos_verde
-    posibles_zona = []
-
-    for zona in ZONAS:
-        celdas_pintadas_rojo = zona & nodo.casillas_rojo
-        celdas_pintadas_verde = zona & nodo.casillas_verde
-        if len(celdas_pintadas_rojo) >= 3:
-            continue
-        elif len(celdas_pintadas_verde) >=3:
-            continue
-        else:
-            posibles_zona.append(zona)
-
-    f, c = currPos
-
-    if posibles_zona:
-        return min(abs(f - casilla[0]) + abs(c - casilla[1]) for casilla in set().union(*posibles_zona))
-
-    return float('inf')
-
 #Distancia caballo a zona libre
 def distancia_de_caballo_a_zona_libre(pos, nodo: Nodo):
 
@@ -100,35 +58,6 @@ def distancia_de_caballo_a_zona_libre(pos, nodo: Nodo):
                 cola.append(((x, y), pasos + 1))
 
     return float('inf')  # No hay zonas útiles accesibles
-
-def heuristica(nodo: Nodo):
-    """
-    Evalúa el estado actual del tablero desde la perspectiva del jugador (maquina).
-
-    La función considera:
-    - Cantidad de casillas dominadas por el jugador
-    - Distancia a zonas estratégicas
-    - Cantidad de casillas pintadas
-
-    Args:
-        nodo : Estado actual del jugador.
-
-    Returns:
-        float: Valor heurístico del estado.
-    """
-    #Zonas ganadas
-    score = (nodo.zonas_verde - nodo.zonas_rojo) * 10
-    #Casillas pintadas
-    score += len(nodo.casillas_verde) - len(nodo.casillas_rojo)
-    #Proximidad a casillas por pintar
-    dist_verde = distancia_de_caballo_a_zona_libre(nodo.pos_verde, nodo)
-    dist_rojo = distancia_de_caballo_a_zona_libre(nodo.pos_rojo, nodo)
-
-    # Penalizar si está lejos de zona libre
-    if dist_verde != float('inf') and dist_rojo != float('inf'):
-        score += (dist_rojo - dist_verde) * 0.5
-
-    return score
 
 def heuristica2(nodo: Nodo):
 
